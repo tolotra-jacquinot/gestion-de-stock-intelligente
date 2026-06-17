@@ -224,3 +224,5 @@ dist/
 # Environment variables
 .env
 
+db.sqlite3
+*.sqlite3
