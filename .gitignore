@@ -226,3 +226,4 @@ dist/
 
 db.sqlite3
 *.sqlite3
+hospital-frontend-backup/

@@ -1,25 +1,14 @@
+import { Routes, Route } from "react-router-dom";
+import ForgotPassword from "./components/ForgotPassword";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Activity, 
-  Search, 
-  Bell, 
-  Home, 
-  Package, 
-  ArrowLeftRight, 
-  User, 
-  ShieldAlert, 
-  Plus, 
-  Settings, 
-  Sparkles,
-  Users,
-  ShieldAlert as AlertIcon
-} from 'lucide-react';
+import { Activity, Search, Bell, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
 
 import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole } from './types';
 import { initialProducts, initialMovements } from './data';
 
 import LoginView from './components/LoginView';
+import ResetPassword from "./components/ResetPassword";
 import DashboardView from './components/DashboardView';
 import StockView from './components/StockView';
 import MovementsView from './components/MovementsView';
@@ -294,8 +283,30 @@ export default function App() {
 
   // Login guard redirect if session has not started yet
   if (!currentUser) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />;
-  }
+  return (
+    <Routes>
+
+      <Route
+        path="/"
+        element={
+          <LoginView
+            onLoginSuccess={handleLoginSuccess}
+          />
+        }
+      />
+
+      <Route
+        path="/forgot-password"
+        element={<ForgotPassword />}
+      />
+      <Route
+        path="/reset-password/:uidb64/:token"
+        element={<ResetPassword />}
+      />
+
+    </Routes>
+  );
+}
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const selectedProductMovements = movements.filter(m => m.productId === selectedProductId);
@@ -620,3 +631,5 @@ export default function App() {
     </div>
   );
 }
+
+
