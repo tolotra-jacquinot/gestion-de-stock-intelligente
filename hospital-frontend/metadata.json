@@ -1,0 +1,6 @@
+{
+  "name": "Gestion de Stock",
+  "description": "Système de gestion de stock de pharmacie hospitalière sécurisé avec analyses prédictives et suivi d'inventaire.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
