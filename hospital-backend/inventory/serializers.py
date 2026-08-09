@@ -9,6 +9,7 @@ class StockMovementSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockMovement
         fields = "__all__"
+        read_only_fields = ["user", "created_at"]
 
     def validate(self, attrs):
         product = attrs.get("product")
