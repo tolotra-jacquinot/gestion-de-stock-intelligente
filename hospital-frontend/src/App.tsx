@@ -6,6 +6,7 @@ import { Activity, Search, Bell, Home, Package, ArrowLeftRight, User, ShieldAler
 
 import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole } from './types';
 import { initialMovements } from './data';
+import { apiFetch } from "./api";
 
 import LoginView from './components/LoginView';
 import ResetPassword from "./components/ResetPassword";
@@ -79,19 +80,8 @@ export default function App() {
   const fetchProducts = async () => {
 
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        return;
-      }
-
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/products/",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/products/"
       );
 
       if (!response.ok) {
@@ -279,13 +269,6 @@ const handleSaveProduct = async (data: {
   location: string;
 }) => {
 
-  const token = localStorage.getItem("token");
-
-    if (!token) {
-      console.error("Token JWT manquant");
-      return;
-    }
-
   const codePrefixes: Record<string, string> = {
     Médicaments: "MED",
     Dispositifs: "DSP",
@@ -297,13 +280,12 @@ const handleSaveProduct = async (data: {
   const code = `${prefix}-${randomNum}-CP`;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       "http://127.0.0.1:8000/api/products/",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: data.name,

@@ -27,6 +27,7 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
       });
 
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("refreshToken", res.data.refresh);
       localStorage.setItem("role", res.data.role);
 
       onLoginSuccess({

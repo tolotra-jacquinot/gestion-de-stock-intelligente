@@ -111,6 +111,7 @@ def login(request):
         return Response(
             {
                 "token": str(refresh.access_token),
+                "refresh": str(refresh),
                 "username": user.username,
                 "role": user.role,
             }
