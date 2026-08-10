@@ -32,7 +32,11 @@ export interface Movement {
   isEmergency?: boolean;
 }
 
-export type UserRole = 'pharmacien' | 'magasinier' | 'administrateur' | 'responsable';
+export type UserRole =
+  | 'admin'
+  | 'pharmacien'
+  | 'magasinier'
+  | 'directeur';
 
 export interface UserAccount {
   id: string;

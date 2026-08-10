@@ -167,7 +167,7 @@ export default function StockView({ products, onSelectProduct, onAddProduct, rol
       )}
 
       {/* Persistent Floating Action Button in the bottom corner of view */}
-      {(role === 'administrateur' || role === 'pharmacien') && (
+      {(role === 'admin' || role === 'magasinier') && (
         <div className="flex justify-end pt-4">
           <button 
             onClick={onAddProduct}

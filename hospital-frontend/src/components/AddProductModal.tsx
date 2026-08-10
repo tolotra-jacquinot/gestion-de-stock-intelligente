@@ -19,13 +19,13 @@ interface AddProductModalProps {
 export default function AddProductModal({ onClose, onSave }: AddProductModalProps) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ProductCategory>('Médicaments');
-  const [stock, setStock] = useState('100');
-  const [minStock, setMinStock] = useState('50');
-  const [maxStock, setMaxStock] = useState('500');
-  const [expiration, setExpiration] = useState('06/2026');
-  const [packaging, setPackaging] = useState('Boite de 30');
-  const [unitPrice, setUnitPrice] = useState('2.50');
-  const [location, setLocation] = useState('Pharmacie Centrale - Tiroir G3');
+  const [stock, setStock] = useState('');
+  const [minStock, setMinStock] = useState('');
+  const [maxStock, setMaxStock] = useState('');
+  const [expiration, setExpiration] = useState('');
+  const [packaging, setPackaging] = useState('');
+  const [unitPrice, setUnitPrice] = useState('');
+  const [location, setLocation] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,14 +104,23 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
                 Conditionnement
               </label>
-              <input 
-                type="text" 
-                required
+              <select
                 value={packaging}
                 onChange={(e) => setPackaging(e.target.value)}
-                placeholder="ex: Boite de 30"
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
-              />
+                required
+                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800 bg-white"
+              >
+                <option value="">Sélectionner</option>
+                <option value="Boîte de 10">Boîte de 10</option>
+                <option value="Boîte de 20">Boîte de 20</option>
+                <option value="Boîte de 30">Boîte de 30</option>
+                <option value="Boîte de 50">Boîte de 50</option>
+                <option value="Flacon">Flacon</option>
+                <option value="Ampoule">Ampoule</option>
+                <option value="Sachet">Sachet</option>
+                <option value="Carton">Carton</option>
+                <option value="Unité">Unité</option>
+              </select>
             </div>
 
           </div>
@@ -129,6 +138,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 min="0"
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
+                placeholder="ex: 100"
                 className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
               />
             </div>
@@ -144,6 +154,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 min="1"
                 value={minStock}
                 onChange={(e) => setMinStock(e.target.value)}
+                placeholder="ex: 50"
                 className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
               />
             </div>
@@ -159,6 +170,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 min="1"
                 value={maxStock}
                 onChange={(e) => setMaxStock(e.target.value)}
+                placeholder="ex: 500"
                 className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
               />
             </div>
@@ -170,7 +182,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
             {/* Price */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
-                Prix Unitaire (€)
+                Prix Unitaire (Ar)
               </label>
               <input 
                 type="number" 
@@ -179,6 +191,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 min="0"
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
+                placeholder="ex: 100.50"
                 className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
               />
             </div>
@@ -189,11 +202,10 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 Date d'expiration
               </label>
               <input 
-                type="text" 
+                type="date"
                 required
                 value={expiration}
                 onChange={(e) => setExpiration(e.target.value)}
-                placeholder="MM/AAAA ou Indéfini"
                 className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
               />
             </div>

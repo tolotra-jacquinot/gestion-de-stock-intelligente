@@ -77,13 +77,14 @@ export default function App() {
 
   useEffect(() => {
   const fetchProducts = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return;
-    }
 
     try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return;
+      }
+
       const response = await fetch(
         "http://127.0.0.1:8000/api/products/",
         {
@@ -265,62 +266,83 @@ export default function App() {
   };
 
   // Action: Save custom created product card
-  const handleSaveProduct = (data: {
-    name: string;
-    category: any;
-    stock: number;
-    minStock: number;
-    maxStock: number;
-    expiration: string;
-    packaging: string;
-    unitPrice: number;
-    location: string;
-  }) => {
-    const id = `item-${Date.now()}`;
-    const codePrefixes: Record<string, string> = {
-      Médicaments: 'MED',
-      Dispositifs: 'DSP',
-      Solutés: 'SLT'
-    };
-    const prefix = codePrefixes[data.category] || 'PRD';
-    const randomNum = Math.floor(100 + Math.random() * 900);
-    const code = `${prefix}-${randomNum}-CP`;
+// Action: Save product through Django API
+const handleSaveProduct = async (data: {
+  name: string;
+  category: any;
+  stock: number;
+  minStock: number;
+  maxStock: number;
+  expiration: string;
+  packaging: string;
+  unitPrice: number;
+  location: string;
+}) => {
 
-    const status = computeProductStatus(data.stock, data.minStock, data.expiration);
+  const token = localStorage.getItem("token");
 
-    const newProduct: Product = {
-      id,
-      name: data.name,
-      code,
-      category: data.category,
-      status,
-      stock: data.stock,
-      minStock: data.minStock,
-      maxStock: data.maxStock,
-      expiration: data.expiration,
-      packaging: data.packaging,
-      unitPrice: data.unitPrice,
-      location: data.location,
-      active: true
-    };
-
-    setProducts(prev => [newProduct, ...prev]);
-
-    // Log the initial inventory move
-    if (data.stock > 0) {
-      const initialMove: Movement = {
-        id: `mov-${Date.now()}`,
-        productId: id,
-        productName: data.name,
-        type: 'Entrée',
-        quantity: data.stock,
-        user: currentUser?.name || 'Dr. Martin',
-        destination: 'Stock Global Initial',
-        timestamp: getFormattedDateTime()
-      };
-      setMovements(prev => [initialMove, ...prev]);
+    if (!token) {
+      console.error("Token JWT manquant");
+      return;
     }
+
+  const codePrefixes: Record<string, string> = {
+    Médicaments: "MED",
+    Dispositifs: "DSP",
+    Solutés: "SLT",
   };
+
+  const prefix = codePrefixes[data.category] || "PRD";
+  const randomNum = Math.floor(100 + Math.random() * 900);
+  const code = `${prefix}-${randomNum}-CP`;
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/products/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: data.name,
+          code: code,
+          category: data.category,
+          stock: data.stock,
+          min_stock: data.minStock,
+          max_stock: data.maxStock,
+          expiration: data.expiration,
+          location: data.location,
+          packaging: data.packaging,
+          unit_price: data.unitPrice,
+          supplier: "",
+          active: true,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Erreur création produit :", errorData);
+      return;
+    }
+
+    const createdProduct = await response.json();
+
+    setProducts((prev) => [
+      mapApiProductToProduct(createdProduct),
+      ...prev,
+    ]);
+
+    setIsAddOpen(false);
+  } catch (error) {
+    console.error(
+      "Erreur lors de la création du produit :",
+      error
+    );
+  }
+};
 
   const handleChangePassword = async (oldPass: string, newPass: string) => {
     // Simulating password modification check
@@ -474,7 +496,7 @@ export default function App() {
           </button>
 
           {/* Admin Utilisateurs Tab */}
-          {currentUser.role === 'administrateur' && (
+          {currentUser.role === 'admin' && (
             <button 
               onClick={() => setActiveTab('users')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
