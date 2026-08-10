@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Activity, Search, Bell, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
 
 import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole } from './types';
-import { initialMovements } from './data';
 import { apiFetch } from "./api";
 
 import LoginView from './components/LoginView';
@@ -70,6 +69,26 @@ const mapApiProductToProduct = (apiProduct: any): Product => ({
   ),
 });
 
+const mapApiMovementToMovement = (
+  apiMovement: any,
+  products: Product[]
+): Movement => {
+  const product = products.find(
+    (p) => p.id === String(apiMovement.product)
+  );
+
+  return {
+    id: String(apiMovement.id),
+    productId: String(apiMovement.product),
+    productName: product?.name || `Produit #${apiMovement.product}`,
+    type: apiMovement.movement_type === "ENTRY" ? "Entrée" : "Sortie",
+    quantity: apiMovement.quantity,
+    user: `Utilisateur #${apiMovement.user}`,
+    destination: apiMovement.reason || "",
+    timestamp: new Date(apiMovement.created_at).toLocaleString("fr-FR"),
+  };
+};
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   
@@ -104,10 +123,40 @@ export default function App() {
   fetchProducts();
 }, [currentUser]);
 
-  const [movements, setMovements] = useState<Movement[]>(() => {
-    const saved = localStorage.getItem('hospital_inventory_movements');
-    return saved ? JSON.parse(saved) : initialMovements;
-  });
+  useEffect(() => {
+  const fetchMovements = async () => {
+    if (!currentUser || products.length === 0) {
+      return;
+    }
+
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/movements/"
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erreur API : ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const formattedMovements = data.map((movement: any) =>
+        mapApiMovementToMovement(movement, products)
+      );
+
+      setMovements(formattedMovements);
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des mouvements :",
+        error
+      );
+    }
+  };
+
+  fetchMovements();
+}, [currentUser, products]);
+
+  const [movements, setMovements] = useState<Movement[]>([]);
 
   const [users, setUsers] = useState<UserAccount[]>(() => {
     const saved = localStorage.getItem('hospital_inventory_users');
@@ -126,10 +175,6 @@ export default function App() {
   const [quickMoveType, setQuickMoveType] = useState<MovementType | null>(null);
 
   // Sync to localStorage
-  useEffect(() => {
-    localStorage.setItem('hospital_inventory_movements', JSON.stringify(movements));
-  }, [movements]);
-
   useEffect(() => {
     localStorage.setItem('hospital_inventory_users', JSON.stringify(users));
   }, [users]);
@@ -217,45 +262,67 @@ export default function App() {
   };
 
   // Action: Register movement (Entrée or Sortie)
-  const handleRegisterMove = (
-    productId: string, 
-    quantity: number, 
-    type: MovementType, 
-    destination: string
-  ) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id === productId) {
-        const delta = type === 'Entrée' ? quantity : -quantity;
-        const newStock = Math.max(0, p.stock + delta);
-        const newStatus = computeProductStatus(newStock, p.minStock, p.expiration);
-        return {
-          ...p,
-          stock: newStock,
-          status: newStatus
-        };
+// Action: Register movement through Django API
+const handleRegisterMove = async (
+  productId: string,
+  quantity: number,
+  type: MovementType,
+  destination: string
+) => {
+  try {
+    const response = await apiFetch(
+      "http://127.0.0.1:8000/api/movements/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          product: Number(productId),
+          movement_type: type === "Entrée" ? "ENTRY" : "EXIT",
+          quantity,
+          reason: destination,
+        }),
       }
-      return p;
-    }));
+    );
 
-    const prod = products.find(p => p.id === productId);
-    if (prod) {
-      const isEmergency = type === 'Sortie' && prod.status === 'CRITIQUE';
-      const newMove: Movement = {
-        id: `mov-${Date.now()}`,
-        productId,
-        productName: prod.name,
-        type,
-        quantity,
-        user: currentUser?.name || 'Dr. Martin',
-        destination,
-        timestamp: getFormattedDateTime(),
-        isEmergency
-      };
-      setMovements(prev => [newMove, ...prev]);
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error(
+        "Erreur création mouvement :",
+        errorData
+      );
+      return;
     }
-  };
 
-  // Action: Save custom created product card
+    const createdMovement = await response.json();
+
+    setMovements((prev) => [
+      mapApiMovementToMovement(createdMovement, products),
+      ...prev,
+    ]);
+
+    // Recharger les produits pour récupérer le nouveau stock calculé par Django
+    const productsResponse = await apiFetch(
+      "http://127.0.0.1:8000/api/products/"
+    );
+
+    if (productsResponse.ok) {
+      const productsData = await productsResponse.json();
+
+      setProducts(
+        productsData.map(mapApiProductToProduct)
+      );
+    }
+
+    setQuickMoveType(null);
+  } catch (error) {
+    console.error(
+      "Erreur lors de l'enregistrement du mouvement :",
+      error
+    );
+  }
+};
 // Action: Save product through Django API
 const handleSaveProduct = async (data: {
   name: string;
