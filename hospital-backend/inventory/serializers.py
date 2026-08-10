@@ -6,6 +6,11 @@ from .models import StockMovement
 
 class StockMovementSerializer(serializers.ModelSerializer):
 
+    user_name = serializers.CharField(
+        source="user.username",
+        read_only=True
+    )
+
     class Meta:
         model = StockMovement
         fields = "__all__"

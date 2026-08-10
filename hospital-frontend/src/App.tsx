@@ -83,7 +83,7 @@ const mapApiMovementToMovement = (
     productName: product?.name || `Produit #${apiMovement.product}`,
     type: apiMovement.movement_type === "ENTRY" ? "Entrée" : "Sortie",
     quantity: apiMovement.quantity,
-    user: `Utilisateur #${apiMovement.user}`,
+    user: apiMovement.user_name || `Utilisateur #${apiMovement.user}`,
     destination: apiMovement.reason || "",
     timestamp: new Date(apiMovement.created_at).toLocaleString("fr-FR"),
   };
