@@ -9,6 +9,20 @@ interface ProductDetailsViewProps {
   onApproveOrder: (productId: string, quantity: number) => void;
   onRegisterMove: (productId: string, quantity: number, type: 'Entrée' | 'Sortie', destination: string) => void;
   role: UserRole;
+  onUpdateProduct: (productId: string,data: {
+      name: string;
+      category: any;
+      minStock: number;
+      maxStock: number;
+      expiration: string;
+      packaging: string;
+      unitPrice: number;
+      location: string;
+    }
+  ) => Promise<boolean>;
+
+  onArchiveProduct: (productId: string
+  ) => Promise<boolean>;
 }
 
 export default function ProductDetailsView({ 
@@ -17,12 +31,37 @@ export default function ProductDetailsView({
   onBack, 
   onApproveOrder, 
   onRegisterMove,
+  onUpdateProduct,
+  onArchiveProduct,
   role
 }: ProductDetailsViewProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalQty, setModalQty] = useState('10');
   const [modalDest, setModalDest] = useState('Urgences');
   const [isOrdered, setIsOrdered] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [editName, setEditName] = useState(product.name);
+  const [editCategory, setEditCategory] = useState(product.category);
+  const [editMinStock, setEditMinStock] = useState(
+    String(product.minStock)
+  );
+  const [editMaxStock, setEditMaxStock] = useState(
+    String(product.maxStock)
+  );
+  const [editExpiration, setEditExpiration] = useState(
+    product.expiration
+  );
+  const [editPackaging, setEditPackaging] = useState(
+    product.packaging
+  );
+  const [editUnitPrice, setEditUnitPrice] = useState(
+    String(product.unitPrice)
+  );
+  const [editLocation, setEditLocation] = useState(
+    product.location
+  );
 
   // Compute stock percentage
   const stockPercentage = Math.min(Math.round((product.stock / product.maxStock) * 100), 100);
@@ -47,6 +86,42 @@ export default function ProductDetailsView({
       onRegisterMove(product.id, qty, 'Sortie', modalDest);
       setModalOpen(false);
     }
+  };
+
+  const handleEditSubmit = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
+
+    const success = await onUpdateProduct(
+      product.id,
+      {
+        name: editName,
+        category: editCategory,
+        minStock: Number(editMinStock),
+        maxStock: Number(editMaxStock),
+        expiration: editExpiration,
+        packaging: editPackaging,
+        unitPrice: Number(editUnitPrice),
+        location: editLocation,
+      }
+    );
+
+    if (success) {
+      setIsEditing(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    const confirmed = window.confirm(
+      `Voulez-vous vraiment archiver "${product.name}" ?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await onArchiveProduct(product.id);
   };
 
   return (
@@ -92,9 +167,33 @@ export default function ProductDetailsView({
               </p>
             </div>
             
-            <span className="bg-emerald-50 text-emerald-800 border border-emerald-150 px-3 py-1 rounded-full text-xs font-bold leading-normal tracking-wide shrink-0 shadow-xs">
-              Actif
-            </span>
+            <div className="flex items-center gap-2">
+
+              <span className="bg-emerald-50 text-emerald-800 border border-emerald-150 px-3 py-1 rounded-full text-xs font-bold">
+                Actif
+              </span>
+
+              {(role === "admin" || role === "magasinier") && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="px-3 py-1.5 text-xs font-bold text-blue-800 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100"
+                  >
+                    Modifier
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleArchive}
+                    className="px-3 py-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100"
+                  >
+                    Archiver
+                  </button>
+                </>
+              )}
+
+            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
@@ -130,6 +229,139 @@ export default function ProductDetailsView({
         </div>
 
       </section>
+
+      {isEditing && (
+        <section className="bg-white border border-blue-200 rounded-xl p-5 shadow-xs">
+
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-slate-800">
+              Modifier le produit
+            </h3>
+
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="text-slate-500 hover:text-slate-800"
+            >
+              ✕
+            </button>
+          </div>
+
+          <form
+            onSubmit={handleEditSubmit}
+            className="space-y-4"
+          >
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Nom du produit"
+                className="border p-2.5 rounded-lg"
+                required
+              />
+
+              <select
+                value={editCategory}
+                onChange={(e) =>
+                  setEditCategory(e.target.value as any)
+                }
+                className="border p-2.5 rounded-lg bg-white"
+              >
+                <option value="Médicaments">Médicaments</option>
+                <option value="Dispositifs">Dispositifs</option>
+                <option value="Solutés">Solutés</option>
+              </select>
+
+              <input
+                type="number"
+                value={editMinStock}
+                onChange={(e) => setEditMinStock(e.target.value)}
+                placeholder="Stock minimum"
+                className="border p-2.5 rounded-lg"
+                required
+              />
+
+              <input
+                type="number"
+                value={editMaxStock}
+                onChange={(e) => setEditMaxStock(e.target.value)}
+                placeholder="Stock maximum"
+                className="border p-2.5 rounded-lg"
+                required
+              />
+
+              <input
+                type="date"
+                value={editExpiration}
+                onChange={(e) =>
+                  setEditExpiration(e.target.value)
+                }
+                className="border p-2.5 rounded-lg"
+                required
+              />
+
+              <input
+                type="text"
+                value={editPackaging}
+                onChange={(e) =>
+                  setEditPackaging(e.target.value)
+                }
+                placeholder="Conditionnement"
+                className="border p-2.5 rounded-lg"
+                required
+              />
+
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={editUnitPrice}
+                onChange={(e) =>
+                  setEditUnitPrice(e.target.value)
+                }
+                placeholder="Prix unitaire"
+                className="border p-2.5 rounded-lg"
+                required
+              />
+
+              <input
+                type="text"
+                value={editLocation}
+                onChange={(e) =>
+                  setEditLocation(e.target.value)
+                }
+                placeholder="Emplacement"
+                className="border p-2.5 rounded-lg"
+                required
+              />
+
+            </div>
+
+            <div className="flex justify-end gap-3">
+
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-4 py-2 border rounded-lg text-sm font-bold text-slate-600"
+              >
+                Annuler
+              </button>
+
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-800 text-white rounded-lg text-sm font-bold"
+              >
+                Enregistrer les modifications
+              </button>
+
+            </div>
+
+          </form>
+        </section>
+      )}
 
       {/* Grid of details: Gauge & Prediction */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -263,7 +495,7 @@ export default function ProductDetailsView({
                 </p>
               </div>
 
-              {role === 'administrateur' || role === 'pharmacien' ? (
+              {role === 'admin' || role === 'magasinier' ? (
                 <button 
                   onClick={handleOrderApproval}
                   disabled={isOrdered}
@@ -366,7 +598,7 @@ export default function ProductDetailsView({
       </section>
 
       {/* Large Floating Action Button for Exit registration */}
-      {(role === 'administrateur' || role === 'pharmacien' || role === 'magasinier') && (
+      {(role === 'admin' || role === 'pharmacien' || role === 'magasinier') && (
         <div className="flex justify-end pt-2">
           <button 
             onClick={() => setModalOpen(true)}

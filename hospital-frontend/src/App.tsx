@@ -128,7 +128,9 @@ export default function App() {
 
       const data = await response.json();
 
-      const formattedProducts = data.map(mapApiProductToProduct);
+      const formattedProducts = data
+        .filter((product: any) => product.active === true)
+        .map(mapApiProductToProduct);
 
       setProducts(formattedProducts);
     } catch (error) {
@@ -630,6 +632,121 @@ const handleSaveProduct = async (data: {
     });
   };
 
+  const handleUpdateProduct = async (
+    productId: string,
+    data: {
+      name: string;
+      category: any;
+      minStock: number;
+      maxStock: number;
+      expiration: string;
+      packaging: string;
+      unitPrice: number;
+      location: string;
+    }
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/products/${productId}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: data.name,
+            category: data.category,
+            min_stock: data.minStock,
+            max_stock: data.maxStock,
+            expiration: data.expiration,
+            packaging: data.packaging,
+            unit_price: data.unitPrice,
+            location: data.location,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur modification produit :",
+          errorData
+        );
+
+        return false;
+      }
+
+      const updatedProduct = await response.json();
+
+      const formattedProduct =
+        mapApiProductToProduct(updatedProduct);
+
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === productId
+            ? formattedProduct
+            : product
+        )
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Erreur lors de la modification du produit :",
+        error
+      );
+
+      return false;
+    }
+  };
+
+  const handleArchiveProduct = async (
+    productId: string
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/products/${productId}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            active: false,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur archivage produit :",
+          errorData
+        );
+
+        return false;
+      }
+
+      setProducts((prev) =>
+        prev.filter((product) => product.id !== productId)
+      );
+
+      setSelectedProductId(null);
+      setActiveTab("stock");
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Erreur lors de l'archivage du produit :",
+        error
+      );
+
+      return false;
+    }
+  };
+
   const handleSelectProduct = (productId: string) => {
     setSelectedProductId(productId);
     setActiveTab('product-details');
@@ -883,6 +1000,8 @@ const handleSaveProduct = async (data: {
                 onBack={() => setActiveTab('stock')}
                 onApproveOrder={handleApproveOrder}
                 onRegisterMove={handleRegisterMove}
+                onUpdateProduct={handleUpdateProduct}
+                onArchiveProduct={handleArchiveProduct}
                 role={currentUser.role}
               />
             )}
