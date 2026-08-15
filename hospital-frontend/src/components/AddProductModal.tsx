@@ -13,7 +13,7 @@ interface AddProductModalProps {
     packaging: string;
     unitPrice: number;
     location: string;
-  }) => void;
+  }) => Promise<void>;
 }
 
 export default function AddProductModal({ onClose, onSave }: AddProductModalProps) {
@@ -26,24 +26,32 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
   const [packaging, setPackaging] = useState('');
   const [unitPrice, setUnitPrice] = useState('');
   const [location, setLocation] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name) return;
 
-    onSave({
-      name,
-      category,
-      stock: parseInt(stock, 10) || 0,
-      minStock: parseInt(minStock, 10) || 50,
-      maxStock: parseInt(maxStock, 10) || 500,
-      expiration,
-      packaging,
-      unitPrice: parseFloat(unitPrice) || 1.0,
-      location
-    });
-    
-    onClose();
+    if (!name || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      await onSave({
+        name,
+        category,
+        stock: parseInt(stock, 10) || 0,
+        minStock: parseInt(minStock, 10) || 50,
+        maxStock: parseInt(maxStock, 10) || 500,
+        expiration,
+        packaging,
+        unitPrice: parseFloat(unitPrice) || 1.0,
+        location,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -231,15 +239,24 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
             <button 
               type="button"
               onClick={onClose}
-              className="flex-1 border border-slate-200 py-3 rounded-lg font-bold text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-50 transition-colors"
+              disabled={isSaving}
+              className="flex-1 border border-slate-200 py-3 rounded-lg font-bold text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Annuler
             </button>
             <button 
               type="submit"
-              className="flex-1 bg-blue-800 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-sm hover:bg-blue-700 transition-colors active:scale-[0.98]"
+              disabled={isSaving}
+              className="flex-1 bg-blue-800 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-sm hover:bg-blue-700 transition-colors active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Enregistrer
+              {isSaving ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  Enregistrement...
+                </span>
+              ) : (
+                "Enregistrer"
+              )}
             </button>
           </div>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MapPin, Sparkles, TrendingUp, User, Clock, AlertTriangle, Check } from 'lucide-react';
+import { ArrowLeft, MapPin, Sparkles, TrendingUp, User, Clock, AlertTriangle, Check, Archive } from 'lucide-react';
 import { Product, Movement, UserRole } from '../types';
 
 interface ProductDetailsViewProps {
@@ -41,6 +41,8 @@ export default function ProductDetailsView({
   const [isOrdered, setIsOrdered] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const [editName, setEditName] = useState(product.name);
   const [editCategory, setEditCategory] = useState(product.category);
@@ -112,16 +114,20 @@ export default function ProductDetailsView({
     }
   };
 
-  const handleArchive = async () => {
-    const confirmed = window.confirm(
-      `Voulez-vous vraiment archiver "${product.name}" ?`
-    );
+  const handleArchive = () => {
+    setArchiveModalOpen(true);
+  };
 
-    if (!confirmed) {
-      return;
+  const confirmArchive = async () => {
+    setIsArchiving(true);
+
+    const success = await onArchiveProduct(product.id);
+
+    setIsArchiving(false);
+
+    if (success) {
+      setArchiveModalOpen(false);
     }
-
-    await onArchiveProduct(product.id);
   };
 
   return (
@@ -131,18 +137,18 @@ export default function ProductDetailsView({
       <div className="flex items-center gap-3">
         <button 
           onClick={onBack}
-          className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0 text-slate-600"
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors shrink-0 text-slate-600 dark:text-slate-300"
         >
           <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
         </button>
-        <h1 className="text-xl font-bold text-slate-800">Détails Produit</h1>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Détails Produit</h1>
       </div>
 
       {/* Product Box Metadata Section */}
-      <section className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row gap-6 shadow-xs">
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col md:flex-row gap-6 shadow-xs transition-colors">
         
         {/* Isolated illustration image */}
-        <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+        <div className="w-full md:w-48 h-48 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center shrink-0">
           <img 
             alt="Pharmaceutical box visual"
             referrerPolicy="no-referrer"
@@ -158,11 +164,11 @@ export default function ProductDetailsView({
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">
                 Code: {product.code}
               </span>
-              <h2 className="text-2xl font-bold text-slate-800 mt-1">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">
                 {product.name}
               </h2>
-              <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-1">
-                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5 mt-1">
+                <MapPin className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
                 {product.location}
               </p>
             </div>
@@ -199,27 +205,27 @@ export default function ProductDetailsView({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
             
             {/* Category */}
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-lg">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-lg">
               <p className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">Catégorie</p>
-              <p className="text-sm font-bold text-slate-700 mt-1">{product.category}</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">{product.category}</p>
             </div>
 
             {/* Conditioning packaging */}
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-lg">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-lg">
               <p className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">Conditionnement</p>
-              <p className="text-sm font-bold text-slate-700 mt-1">{product.packaging}</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">{product.packaging}</p>
             </div>
 
             {/* Unit Price */}
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-lg">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-lg">
               <p className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">Prix Unitaire</p>
-              <p className="text-sm font-bold text-slate-700 mt-1">{product.unitPrice.toFixed(2)} €</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">{product.unitPrice.toFixed(2)} €</p>
             </div>
 
             {/* Expiration date */}
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-lg">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-lg">
               <p className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">Péremption</p>
-              <p className={`text-sm font-bold mt-1 ${product.status === 'PÉREMPTION' || product.expiration === 'PROCHE' ? 'text-red-600 font-extrabold' : 'text-slate-700'}`}>
+              <p className={`text-sm font-bold mt-1 ${product.status === 'PÉREMPTION' || product.expiration === 'PROCHE' ? 'text-red-600 font-extrabold' : 'text-slate-700 dark:text-slate-200'}`}>
                 {product.expiration}
               </p>
             </div>
@@ -231,17 +237,17 @@ export default function ProductDetailsView({
       </section>
 
       {isEditing && (
-        <section className="bg-white border border-blue-200 rounded-xl p-5 shadow-xs">
+        <section className="bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 rounded-xl p-5 shadow-xs transition-colors">
 
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-slate-800">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100">
               Modifier le produit
             </h3>
 
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="text-slate-500 hover:text-slate-800"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
             >
               ✕
             </button>
@@ -259,7 +265,7 @@ export default function ProductDetailsView({
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Nom du produit"
-                className="border p-2.5 rounded-lg"
+                className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-2.5 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                 required
               />
 
@@ -268,7 +274,7 @@ export default function ProductDetailsView({
                 onChange={(e) =>
                   setEditCategory(e.target.value as any)
                 }
-                className="border p-2.5 rounded-lg bg-white"
+                className="border border-slate-200 dark:border-slate-700 p-2.5 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
               >
                 <option value="Médicaments">Médicaments</option>
                 <option value="Dispositifs">Dispositifs</option>
@@ -280,7 +286,7 @@ export default function ProductDetailsView({
                 value={editMinStock}
                 onChange={(e) => setEditMinStock(e.target.value)}
                 placeholder="Stock minimum"
-                className="border p-2.5 rounded-lg"
+                className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-2.5 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                 required
               />
 
@@ -289,7 +295,7 @@ export default function ProductDetailsView({
                 value={editMaxStock}
                 onChange={(e) => setEditMaxStock(e.target.value)}
                 placeholder="Stock maximum"
-                className="border p-2.5 rounded-lg"
+                className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-2.5 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                 required
               />
 
@@ -299,7 +305,7 @@ export default function ProductDetailsView({
                 onChange={(e) =>
                   setEditExpiration(e.target.value)
                 }
-                className="border p-2.5 rounded-lg"
+                className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-2.5 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                 required
               />
 
@@ -310,7 +316,7 @@ export default function ProductDetailsView({
                   setEditPackaging(e.target.value)
                 }
                 placeholder="Conditionnement"
-                className="border p-2.5 rounded-lg"
+                className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-2.5 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                 required
               />
 
@@ -323,7 +329,7 @@ export default function ProductDetailsView({
                   setEditUnitPrice(e.target.value)
                 }
                 placeholder="Prix unitaire"
-                className="border p-2.5 rounded-lg"
+                className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-2.5 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                 required
               />
 
@@ -334,7 +340,7 @@ export default function ProductDetailsView({
                   setEditLocation(e.target.value)
                 }
                 placeholder="Emplacement"
-                className="border p-2.5 rounded-lg"
+                className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-2.5 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
                 required
               />
 
@@ -345,7 +351,7 @@ export default function ProductDetailsView({
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 border rounded-lg text-sm font-bold text-slate-600"
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 Annuler
               </button>
@@ -367,8 +373,8 @@ export default function ProductDetailsView({
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         {/* Circular Stock Gauge */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-5 flex flex-col items-center justify-center space-y-4 shadow-xs">
-          <h3 className="w-full font-bold text-slate-800 text-sm tracking-tight border-b border-slate-100 pb-2">
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col items-center justify-center space-y-4 shadow-xs transition-colors">
+          <h3 className="w-full font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight border-b border-slate-100 dark:border-slate-800 pb-2">
             État du Stock
           </h3>
 
@@ -379,7 +385,7 @@ export default function ProductDetailsView({
                 cx="80" 
                 cy="80" 
                 r={radius} 
-                className="text-slate-105 stroke-slate-100" 
+                className="text-slate-100 stroke-slate-100 dark:text-slate-800 dark:stroke-slate-800" 
                 strokeWidth="11" 
                 fill="transparent" 
               />
@@ -399,7 +405,9 @@ export default function ProductDetailsView({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-extrabold text-slate-800">{product.stock}</span>
+              <span className="text-3xl font-extrabold text-slate-800 dark:text-slate-100">
+                {product.stock}
+              </span>
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider mt-0.5">Unités</span>
             </div>
           </div>
@@ -408,15 +416,15 @@ export default function ProductDetailsView({
           <div className="w-full space-y-2.5 pt-2">
             <div className="flex justify-between text-xs font-medium">
               <span className="text-slate-450">Seuil Critique</span>
-              <span className="font-extrabold text-slate-700">{product.minStock}</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-200">{product.minStock}</span>
             </div>
             
             <div className="flex justify-between text-xs font-medium">
               <span className="text-slate-450">Stock Maximum</span>
-              <span className="font-extrabold text-slate-700">{product.maxStock}</span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-200">{product.maxStock}</span>
             </div>
 
-            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div 
                 className={`h-full rounded-full transition-all duration-500 ${
                   product.stock === 0 ? 'bg-red-600' : 'bg-blue-800'
@@ -429,10 +437,10 @@ export default function ProductDetailsView({
         </div>
 
         {/* IA Smart Predictive Analysis */}
-        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-5 flex flex-col shadow-xs">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col shadow-xs transition-colors">
           
-          <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-blue-800 animate-pulse" />
               Analyse Prédictive IA
             </h3>
@@ -446,7 +454,7 @@ export default function ProductDetailsView({
           <div className="flex-1 flex flex-col md:flex-row gap-6">
             
             {/* SVG Visual Graphic */}
-            <div className="flex-grow h-44 relative bg-slate-50 rounded-xl p-3 overflow-hidden border border-slate-100 select-none">
+            <div className="flex-grow h-44 relative bg-slate-50 dark:bg-slate-950/50 rounded-xl p-3 overflow-hidden border border-slate-100 dark:border-slate-800 select-none transition-colors">
               
               {/* SVG drawing lines representing a medical inventory trend path */}
               <div className="absolute inset-0 flex items-end justify-between px-6 pb-4">
@@ -485,13 +493,13 @@ export default function ProductDetailsView({
             {/* Recommendation box Actions */}
             <div className="md:w-64 flex flex-col justify-between gap-4">
               
-              <div className="bg-sky-50 border border-sky-150 p-4 rounded-xl shadow-xs">
+              <div className="bg-sky-50 dark:bg-blue-950/30 border border-sky-150 dark:border-blue-900/50 p-4 rounded-xl shadow-xs transition-colors">
                 <div className="flex items-center gap-1.5 text-blue-800 mb-2">
                   <Sparkles className="w-4 h-4" />
                   <span className="text-[10px] font-black uppercase tracking-wider">Recommandation</span>
                 </div>
-                <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                  Commander <span className="font-bold text-blue-900">50 unités</span> d'ici mardi pour écarter tout risque de rupture sous 12 jours.
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                  Commander <span className="font-bold text-blue-900 dark:text-blue-300">50 unités</span> d'ici mardi pour écarter tout risque de rupture sous 12 jours.
                 </p>
               </div>
 
@@ -529,10 +537,10 @@ export default function ProductDetailsView({
       </section>
 
       {/* Audit History Log for this specific product item */}
-      <section className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs transition-colors">
         
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h3 className="font-bold text-slate-800 text-sm">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
             Historique des Mouvements
           </h3>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -544,7 +552,7 @@ export default function ProductDetailsView({
           {productMovements.length > 0 ? (
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 text-slate-450 text-[10px] font-black uppercase tracking-wider border-b border-slate-100">
+                <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-450 dark:text-slate-400 text-[10px] font-black uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                   <th className="p-4 pl-5">Type</th>
                   <th className="p-4">Quantité</th>
                   <th className="p-4">Utilisateur</th>
@@ -552,11 +560,11 @@ export default function ProductDetailsView({
                   <th className="p-4 pr-5 whitespace-nowrap">Date & Heure</th>
                 </tr>
               </thead>
-              <tbody className="text-xs font-medium text-slate-700 divide-y divide-slate-100">
+              <tbody className="text-xs font-medium text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
                 {productMovements.map((mov) => {
                   const isEntree = mov.type === 'Entrée';
                   return (
-                    <tr key={mov.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={mov.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="p-4 pl-5">
                         <span className={`inline-flex items-center gap-1.5 font-bold ${
                           isEntree ? 'text-blue-800' : 'text-red-600'
@@ -571,12 +579,12 @@ export default function ProductDetailsView({
                         </span>
                       </td>
                       <td className="p-4">
-                        <div className="flex items-center gap-1.5 text-slate-600 font-bold">
+                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 font-bold">
                           <User className="w-3.5 h-3.5 text-slate-400" />
                           {mov.user}
                         </div>
                       </td>
-                      <td className="p-4 text-slate-500 max-w-[150px] truncate">{mov.destination}</td>
+                      <td className="p-4 text-slate-500 dark:text-slate-400 max-w-[150px] truncate">{mov.destination}</td>
                       <td className="p-4 pr-5 text-slate-400 whitespace-nowrap font-bold">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
@@ -589,13 +597,79 @@ export default function ProductDetailsView({
               </tbody>
             </table>
           ) : (
-            <div className="p-8 text-center text-slate-400 font-bold">
+            <div className="p-8 text-center text-slate-400 dark:text-slate-500 font-bold">
               Aucun historique de mouvement pour ce produit.
             </div>
           )}
         </div>
 
       </section>
+
+      {/* Archive Product Modal */}
+      {archiveModalOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
+
+          <div className="w-full max-w-md rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xl">
+
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-50">
+                <Archive className="h-5 w-5 text-amber-600" />
+              </div>
+
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                  Archiver ce produit ?
+                </h3>
+
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                  Le produit{' '}
+                  <span className="font-bold text-slate-700 dark:text-slate-200">
+                    {product.name}
+                  </span>{' '}
+                  sera retiré de l’inventaire actif.
+                </p>
+
+                <div className="mt-3 rounded-lg border border-amber-100 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 p-3">
+                  <p className="text-xs font-medium leading-relaxed text-amber-800 dark:text-amber-300">
+                    Son historique de mouvements sera conservé et le produit
+                    ne sera pas supprimé définitivement.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+
+              <button
+                type="button"
+                disabled={isArchiving}
+                onClick={() => setArchiveModalOpen(false)}
+                className="flex-1 rounded-lg border border-slate-200 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                disabled={isArchiving}
+                onClick={confirmArchive}
+                className="flex-1 rounded-lg bg-amber-600 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isArchiving ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                    Archivage...
+                  </span>
+                ) : (
+                  "Archiver"
+                )}
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Large Floating Action Button for Exit registration */}
       {(role === 'admin' || role === 'pharmacien' || role === 'magasinier') && (
@@ -612,16 +686,16 @@ export default function ProductDetailsView({
       {/* Immediate exit registration dialog Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full border border-slate-100 p-6 space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-md w-full border border-slate-100 dark:border-slate-800 p-6 space-y-4">
             
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-bold text-lg text-slate-800">Sortie de Stock Immédiate</h3>
+                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Sortie de Stock Immédiate</h3>
                 <p className="text-xs text-slate-400 mt-0.5">Produit : {product.name}</p>
               </div>
               <button 
                 onClick={() => setModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-extrabold text-base p-1"
+                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 font-extrabold text-base p-1"
               >
                 ✕
               </button>
@@ -640,7 +714,7 @@ export default function ProductDetailsView({
                   required
                   value={modalQty}
                   onChange={(e) => setModalQty(e.target.value)}
-                  className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-red-600 outline-none text-sm text-slate-800"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg focus:ring-1 focus:ring-red-600 outline-none text-sm text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -651,7 +725,7 @@ export default function ProductDetailsView({
                 <select 
                   value={modalDest}
                   onChange={(e) => setModalDest(e.target.value)}
-                  className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-red-600 outline-none text-sm text-slate-800 bg-white"
+                  className="w-full border border-slate-200 dark:border-slate-700 p-2.5 rounded-lg focus:ring-1 focus:ring-red-600 outline-none text-sm text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800"
                 >
                   <option value="Urgences">Urgences</option>
                   <option value="Bloc Opératoire A">Bloc Opératoire A</option>
@@ -662,7 +736,7 @@ export default function ProductDetailsView({
               </div>
 
               {parseInt(modalQty, 10) > product.stock && (
-                <div className="flex items-center gap-1.5 text-xs text-red-600 font-bold bg-red-50 p-2.5 rounded-lg">
+                <div className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-950/30 p-2.5 rounded-lg">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>La quantité demandée dépasse le stock actuel disponible !</span>
                 </div>
@@ -672,7 +746,7 @@ export default function ProductDetailsView({
                 <button 
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="flex-1 border border-slate-200 py-3 rounded-lg font-bold text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-50 transition-colors"
+                  className="flex-1 border border-slate-200 dark:border-slate-700 py-3 rounded-lg font-bold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Annuler
                 </button>

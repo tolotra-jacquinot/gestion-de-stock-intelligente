@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import ForgotPassword from "./components/ForgotPassword";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Activity, Search, Bell, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
+import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
 
 import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole } from './types';
 import { apiFetch } from "./api";
@@ -18,6 +18,7 @@ import AddProductModal from './components/AddProductModal';
 import QuickMovementModal from './components/QuickMovementModal';
 import UsersManagementView from './components/UsersManagementView';
 import AssistantIAView from './components/AssistantIAView';
+import Toast, { ToastType } from "./components/Toast";
 
 // Status computer helper
 function computeProductStatus(
@@ -109,9 +110,58 @@ interface DashboardStats {
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
+  const [toast, setToast] = useState<{ message: string; type: ToastType; } | null>(null);
+
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   
-  // Load products and movements state from localStorage or use initial mock data
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme) {
+      return savedTheme === "dark";
+    }
+
+    return window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+  });
+
+  const showToast = (
+    message: string,
+    type: ToastType = "success"
+  ) => {
+    setToast({
+      message,
+      type,
+    });
+  };
+
+  useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [toast]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (isDarkMode) {
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
+
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -321,6 +371,11 @@ useEffect(() => {
           errorData
         );
 
+        showToast(
+          "Impossible de créer l'utilisateur.",
+          "error"
+        );
+
         return false;
       }
 
@@ -330,6 +385,11 @@ useEffect(() => {
         ...prev,
         mapApiUserToUserAccount(createdUser),
       ]);
+
+      showToast(
+        "Utilisateur créé avec succès.",
+        "success"
+      );
 
       return true;
     } catch (error) {
@@ -368,6 +428,11 @@ useEffect(() => {
           errorData
         );
 
+        showToast(
+          "Impossible de modifier le rôle.",
+          "error"
+        );
+
         return false;
       }
 
@@ -381,11 +446,21 @@ useEffect(() => {
         )
       );
 
+      showToast(
+        "Rôle utilisateur modifié avec succès.",
+        "success"
+      );
+
       return true;
     } catch (error) {
       console.error(
         "Erreur lors de la modification du rôle :",
         error
+      );
+
+      showToast(
+        "Impossible de modifier le rôle.",
+        "error"
       );
 
       return false;
@@ -417,6 +492,11 @@ useEffect(() => {
           errorData
         );
 
+        showToast(
+          "Impossible de supprimer l'utilisateur.",
+          "error"
+        );
+
         return false;
       }
 
@@ -424,11 +504,22 @@ useEffect(() => {
         prev.filter((user) => user.id !== id)
       );
 
+      showToast(
+        "Utilisateur supprimé avec succès.",
+        "success"
+      );
+
       return true;
+
     } catch (error) {
       console.error(
         "Erreur lors de la suppression de l'utilisateur :",
         error
+      );
+
+      showToast(
+        "Impossible de supprimer l'utilisateur.",
+        "error"
       );
 
       return false;
@@ -522,6 +613,12 @@ const handleRegisterMove = async (
         "Erreur création mouvement :",
         errorData
       );
+
+      showToast(
+        "Impossible d'enregistrer le mouvement.",
+        "error"
+      );
+
       return;
     }
 
@@ -546,10 +643,23 @@ const handleRegisterMove = async (
     }
 
     setQuickMoveType(null);
+
+    showToast(
+      type === "Entrée"
+        ? "Entrée de stock enregistrée."
+        : "Sortie de stock enregistrée.",
+      "success"
+    );
+
   } catch (error) {
     console.error(
       "Erreur lors de l'enregistrement du mouvement :",
       error
+    );
+
+    showToast(
+      "Impossible d'enregistrer le mouvement.",
+      "error"
     );
   }
 };
@@ -604,6 +714,12 @@ const handleSaveProduct = async (data: {
     if (!response.ok) {
       const errorData = await response.json();
       console.error("Erreur création produit :", errorData);
+
+      showToast(
+        "Impossible de créer le produit.",
+        "error"
+      );
+
       return;
     }
 
@@ -615,11 +731,23 @@ const handleSaveProduct = async (data: {
     ]);
 
     setIsAddOpen(false);
+
+    showToast(
+      "Produit créé avec succès.",
+      "success"
+    );
+
   } catch (error) {
     console.error(
       "Erreur lors de la création du produit :",
       error
     );
+
+    showToast(
+      "Impossible de créer le produit.",
+      "error"
+    );
+
   }
 };
 
@@ -690,11 +818,22 @@ const handleSaveProduct = async (data: {
         )
       );
 
+      showToast(
+        "Produit modifié avec succès.",
+        "success"
+      );
+
       return true;
+
     } catch (error) {
       console.error(
         "Erreur lors de la modification du produit :",
         error
+      );
+
+      showToast(
+        "Impossible de modifier le produit.",
+        "error"
       );
 
       return false;
@@ -726,6 +865,11 @@ const handleSaveProduct = async (data: {
           errorData
         );
 
+        showToast(
+          "Impossible d'archiver le produit.",
+          "error"
+        );
+
         return false;
       }
 
@@ -736,11 +880,22 @@ const handleSaveProduct = async (data: {
       setSelectedProductId(null);
       setActiveTab("stock");
 
+      showToast(
+        "Produit archivé avec succès.",
+        "success"
+      );
+
       return true;
+
     } catch (error) {
       console.error(
         "Erreur lors de l'archivage du produit :",
         error
+      );
+
+      showToast(
+        "Impossible d'archiver le produit.",
+        "error"
       );
 
       return false;
@@ -792,36 +947,78 @@ const handleSaveProduct = async (data: {
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const selectedProductMovements = movements.filter(m => m.productId === selectedProductId);
 
+  const getRoleLabel = (role: UserRole) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrateur';
+
+      case 'pharmacien':
+        return 'Pharmacien';
+
+      case 'magasinier':
+        return 'Magasinier';
+
+      case 'directeur':
+        return 'Directeur';
+
+      default:
+        return 'Utilisateur';
+    }
+  };
+
   return (
-    <div className="min-h-screen text-slate-800 flex flex-col md:flex-row bg-slate-50">
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
       
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* Dynamic Top Navigation Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-white border-b border-slate-200 flex justify-between items-center px-4 md:px-6">
+      <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-white border-b border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center px-4 md:px-6 transition-colors">
         <div className="flex items-center gap-2.5">
           <Activity className="w-6 h-6 text-blue-800" />
-          <h1 className="text-lg font-extrabold text-blue-900 tracking-tight">SALFA Ejeda</h1>
+          <h1 className="text-lg font-extrabold text-blue-900 dark:text-blue-300 tracking-tight">
+            Gestion de Stock
+          </h1>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            type="button" 
+
+          {/* ✅ BOUTON MODE CLAIR / SOMBRE */}
+          <button
+            type="button"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className="p-2 rounded-full transition-colors text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            title={
+              isDarkMode
+                ? "Passer en mode clair"
+                : "Passer en mode sombre"
+            }
+          >
+            {isDarkMode ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+          </button>
+
+          {/* Search */}
+          <button
+            type="button"
             onClick={() => setActiveTab('stock')}
             className="p-1.5 hover:bg-slate-150 rounded-full transition-colors text-slate-500"
           >
             <Search className="w-5 h-5" />
           </button>
-          <button 
-            type="button"
-            onClick={() => setActiveTab('profile')}
-            className="p-1.5 hover:bg-slate-150 relative rounded-full transition-colors text-slate-500"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-600 rounded-full"></span>
-          </button>
+
         </div>
       </header>
 
       {/* Desktop Responsive Sidebar Rail Container */}
-      <aside className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-slate-200 flex-col p-4 z-30">
+      <aside className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex-col p-4 z-30 transition-colors">
         <div className="space-y-1.5 flex-grow font-sans">
           
           {/* Dashboard Tab */}
@@ -830,11 +1027,11 @@ const handleSaveProduct = async (data: {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'dashboard' 
                 ? 'bg-blue-800 text-white shadow-xs' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Home className="w-5 h-5 stroke-[2]" />
-            <span>Dashboard</span>
+            <span>Tableau de bord</span>
           </button>
 
           {/* Inventaire / Stock Tab */}
@@ -843,7 +1040,7 @@ const handleSaveProduct = async (data: {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'stock' || activeTab === 'product-details'
                 ? 'bg-blue-800 text-white shadow-xs' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Package className="w-5 h-5 stroke-[2]" />
@@ -856,7 +1053,7 @@ const handleSaveProduct = async (data: {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'movements'
                 ? 'bg-blue-800 text-white shadow-xs' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <ArrowLeftRight className="w-5 h-5 stroke-[2]" />
@@ -869,24 +1066,11 @@ const handleSaveProduct = async (data: {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
               activeTab === 'assistant'
                 ? 'bg-blue-800 text-white shadow-xs' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Sparkles className="w-5 h-5 stroke-[2] text-amber-500" />
             <span>Assistant IA</span>
-          </button>
-
-          {/* Profil Tab */}
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
-              activeTab === 'profile'
-                ? 'bg-blue-800 text-white shadow-xs' 
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-            }`}
-          >
-            <User className="w-5 h-5 stroke-[2]" />
-            <span>Profil</span>
           </button>
 
           {/* Admin Utilisateurs Tab */}
@@ -896,7 +1080,7 @@ const handleSaveProduct = async (data: {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
                 activeTab === 'users'
                   ? 'bg-blue-800 text-white shadow-xs' 
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <Users className="w-5 h-5 stroke-[2]" />
@@ -906,23 +1090,44 @@ const handleSaveProduct = async (data: {
 
         </div>
 
-        {/* Workspace certified indicators footer inside the sidebar */}
-        <div className="pt-4 border-t border-slate-100 font-sans space-y-3.5">
-          <div className="flex items-center gap-3 p-2 bg-blue-50 text-blue-800 rounded-lg">
-            <User className="w-5 h-5" />
-            <div className="min-w-0">
-              <p className="text-xs font-bold truncate text-blue-900 leading-tight">{currentUser.name}</p>
-              <p className="text-[10px] text-blue-700 tracking-wider font-semibold uppercase mt-0.5">{currentUser.roleName}</p>
-            </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`
+            w-full flex items-center gap-3 p-3 rounded-xl
+            border transition-all text-left
+            ${
+              activeTab === 'profile'
+                ? 'bg-slate-100 border-slate-300 dark:bg-slate-800 dark:border-slate-700'
+                : 'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
+            }
+          `}
+        >
+          <div className="w-10 h-10 rounded-full bg-blue-800 text-white flex items-center justify-center shrink-0 font-bold text-sm">
+            {(currentUser.name || currentUser.email || 'Utilisateur')
+              .split(' ')
+              .filter(Boolean)
+              .map((part) => part[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()}
           </div>
-          
-          <button 
-            onClick={handleLogout}
-            className="w-full h-10 border border-slate-200 hover:bg-red-50 hover:text-red-650 hover:border-red-100 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors"
-          >
-            Déconnexion
-          </button>
-        </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold truncate text-slate-800 dark:text-slate-100">
+              {currentUser.name || currentUser.email || 'Utilisateur'}
+            </p>
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {getRoleLabel(currentUser.role)}
+            </p>
+          </div>
+
+          <span className="text-slate-400 dark:text-slate-500 text-lg leading-none">
+            ›
+          </span>
+        </button>
+
       </aside>
 
       {/* Main Core Router Workspace Panel */}
@@ -1012,7 +1217,7 @@ const handleSaveProduct = async (data: {
       </main>
 
       {/* Mobile Responsive Persistent Safe Area Bottom Bar Header */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center z-40 pb-safe shadow-md select-none">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex justify-around items-center z-40 pb-safe shadow-md select-none transition-colors">
         
         {/* Dashboard Tab */}
         <button 
@@ -1024,7 +1229,7 @@ const handleSaveProduct = async (data: {
           }`}
         >
           <Home className="w-5 h-5 text-current stroke-[2]" />
-          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Dashboard</span>
+          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Tableau de bord</span>
         </button>
 
         {/* Inventory Tab */}
@@ -1080,7 +1285,7 @@ const handleSaveProduct = async (data: {
         </button>
 
         {/* Admin Users Tab (Mobile) */}
-        {currentUser.role === 'administrateur' && (
+        {currentUser.role === 'admin' && (
           <button 
             onClick={() => setActiveTab('users')}
             className={`flex flex-col items-center justify-center w-16 transition-all ${

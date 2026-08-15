@@ -93,50 +93,50 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Out of Stock Card */}
-        <div className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col justify-between shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex flex-col justify-between shadow-xs">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+            <p className="text-xs font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
               Produits en rupture
             </p>
-            <span className="text-red-600 bg-red-50 p-1.5 rounded-lg">
+            <span className="text-red-600 bg-red-50 dark:bg-red-950/40 dark:text-red-400 p-1.5 rounded-lg">
               <AlertOctagon className="w-5 h-5 stroke-[2]" />
             </span>
           </div>
           <div className="mt-4">
             <p className="text-3xl font-extrabold text-red-600">{displayedOutOfStock}</p>
-            <p className="text-xs text-slate-500 mt-1 font-medium">+2 depuis hier</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">+2 depuis hier</p>
           </div>
         </div>
 
         {/* Near Expiry Card */}
-        <div className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col justify-between shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex flex-col justify-between shadow-xs">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+            <p className="text-xs font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
               Expirations proches
             </p>
-            <span className="text-amber-600 bg-amber-50 p-1.5 rounded-lg">
+            <span className="text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-400 p-1.5 rounded-lg">
               <CalendarRange className="w-5 h-5 stroke-[2]" />
             </span>
           </div>
           <div className="mt-4">
-            <p className="text-3xl font-extrabold text-slate-800">{displayedExpiry}</p>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Sous 30 jours</p>
+            <p className="text-3xl font-extrabold text-slate-800 dark:text-slate-100">{displayedExpiry}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Sous 30 jours</p>
           </div>
         </div>
 
         {/* Movements count */}
-        <div className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col justify-between shadow-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex flex-col justify-between shadow-xs">
           <div className="flex justify-between items-start">
-            <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+            <p className="text-xs font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
               Mouvements du jour
             </p>
-            <span className="text-blue-700 bg-blue-50 p-1.5 rounded-lg">
+            <span className="text-blue-700 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300 p-1.5 rounded-lg">
               <ArrowLeftRight className="w-5 h-5 stroke-[2]" />
             </span>
           </div>
           <div className="mt-4">
-            <p className="text-3xl font-extrabold text-slate-800">{displayedMovements}</p>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Entrées & Sorties</p>
+            <p className="text-3xl font-extrabold text-slate-800 dark:text-slate-100">{displayedMovements}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Entrées & Sorties</p>
           </div>
         </div>
 
@@ -146,9 +146,9 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* Alerts Section */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs flex flex-col">
-          <div className="p-4 border-b border-slate-150 bg-slate-50/50 flex justify-between items-center">
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs flex flex-col">
+          <div className="p-4 border-b border-slate-150 bg-slate-50/50 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center">
+            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
               Alertes Critiques
             </h2>
@@ -163,14 +163,14 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
                 <div
                   key={`${product.alertType}-${product.id}`}
                   onClick={() => onSelectProduct(String(product.id))}
-                  className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
                 >
                   <div>
-                    <p className="text-sm font-bold text-slate-800">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
                       {product.name}
                     </p>
 
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
                       {product.alertType === "RUPTURE" &&
                         `Stock disponible : ${product.stock} unité(s)`}
 
@@ -194,7 +194,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
                 </div>
               ))
             ) : (
-              <div className="p-6 text-center text-sm text-slate-400">
+              <div className="p-6 text-center text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
                 Aucune alerte critique
               </div>
             )}
@@ -202,8 +202,8 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
         </div>
 
         {/* Consumption Chart Visualizer */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between">
-          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 mb-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+          <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-blue-700" />
             Tendance de Consommation
           </h2>
@@ -237,16 +237,16 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
 
       {/* IA Predictions: Risques à 7 jours */}
       {role === 'magasinier' ? (
-        <section className="bg-slate-150 text-slate-600 p-5 rounded-2xl relative overflow-hidden border border-slate-200">
+        <section className="bg-slate-150 text-slate-600 p-5 rounded-2xl relative overflow-hidden border border-slate-200 dark:border-slate-800">
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Lock className="w-5 h-5 text-slate-500" />
-                <h2 className="text-base font-extrabold text-slate-800 tracking-tight">
+                <Lock className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                <h2 className="text-base font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
                   Prédictions IA : Verrouillé
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">
+              <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
                 L'accès à l'intelligence artificielle prédictive de rupture de stock à 7 jours est réservé aux Pharmaciens et aux Directeurs de l'établissement hospitalier afin de réguler la chaîne de distribution médicale.
               </p>
             </div>
@@ -273,42 +273,48 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
               {/* Risk prediction 1 */}
-              <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10 hover:bg-white/15 transition-all">
+              <div className="bg-white/95 dark:bg-slate-900/20 p-4 rounded-xl border border-white/70 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-sky-200 uppercase font-black tracking-wider">Confiance 94%</span>
+                  <span className="text-[10px] text-blue-700 dark:text-sky-200 uppercase font-black tracking-wider">
+                    Confiance 94%
+                  </span>
                   <span className="w-2.5 h-2.5 bg-sky-200 rounded-full animate-ping"></span>
                 </div>
-                <p className="text-sm font-bold mt-1 text-white">Paracétamol IV</p>
-                <p className="text-xs mt-0.5 text-sky-100">Rupture estimée : J-3</p>
+                <p className="text-sm font-bold mt-1 text-slate-800 dark:text-white">Paracétamol IV</p>
+                <p className="text-xs mt-0.5 text-slate-600 dark:text-sky-100">Rupture estimée : J-3</p>
                 
-                <div className="w-full bg-white/20 h-1.5 mt-4 rounded-full overflow-hidden">
-                  <div className="bg-sky-200 h-full w-[94%] rounded-full"></div>
+                <div className="w-full bg-blue-100 dark:bg-slate-900/30 h-1.5 mt-4 rounded-full overflow-hidden">
+                  <div className="bg-blue-500 dark:bg-sky-200 h-full w-[94%] rounded-full"></div>
                 </div>
               </div>
 
               {/* Risk prediction 2 */}
-              <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10 hover:bg-white/15 transition-all">
+              <div className="bg-white/95 dark:bg-slate-900/20 p-4 rounded-xl border border-white/70 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-sky-200 uppercase font-black tracking-wider">Confiance 88%</span>
+                  <span className="text-[10px] text-blue-700 dark:text-sky-200 uppercase font-black tracking-wider">
+                    Confiance 88%
+                  </span>
                 </div>
-                <p className="text-sm font-bold mt-1 text-white">Sérum Physiologique</p>
-                <p className="text-xs mt-0.5 text-sky-100">Rupture estimée : J-5</p>
-                
-                <div className="w-full bg-white/20 h-1.5 mt-4 rounded-full overflow-hidden">
-                  <div className="bg-sky-200 h-full w-[88%] rounded-full"></div>
+                <p className="text-sm font-bold mt-1 text-slate-800 dark:text-white">Sérum Physiologique</p>
+                <p className="text-xs mt-0.5 text-slate-600 dark:text-sky-100">Rupture estimée : J-5</p>
+
+                <div className="w-full bg-blue-100 dark:bg-slate-900/30 h-1.5 mt-4 rounded-full overflow-hidden">
+                  <div className="bg-blue-500 dark:bg-sky-200 h-full w-[88%] rounded-full"></div>
                 </div>
               </div>
 
               {/* Risk prediction 3 */}
-              <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10 hover:bg-white/15 transition-all">
+              <div className="bg-white/95 dark:bg-slate-900/20 p-4 rounded-xl border border-white/70 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-sky-200 uppercase font-black tracking-wider">Confiance 82%</span>
+                  <span className="text-[10px] text-blue-700 dark:text-sky-200 uppercase font-black tracking-wider">
+                    Confiance 82%
+                  </span>
                 </div>
-                <p className="text-sm font-bold mt-1 text-white">Adrénaline 1mg</p>
-                <p className="text-xs mt-0.5 text-sky-100">Rupture estimée : J-6</p>
-                
-                <div className="w-full bg-white/20 h-1.5 mt-4 rounded-full overflow-hidden">
-                  <div className="bg-sky-200 h-full w-[82%] rounded-full"></div>
+                <p className="text-sm font-bold mt-1 text-slate-800 dark:text-white">Adrénaline 1mg</p>
+                <p className="text-xs mt-0.5 text-slate-600 dark:text-sky-100">Rupture estimée : J-6</p>
+
+                <div className="w-full bg-blue-100 dark:bg-slate-900/30 h-1.5 mt-4 rounded-full overflow-hidden">
+                  <div className="bg-blue-500 dark:bg-sky-200 h-full w-[82%] rounded-full"></div>
                 </div>
               </div>
 
@@ -316,7 +322,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
           </div>
 
           {/* Elegant light background mesh decorative vector circles */}
-          <div className="absolute -right-16 -top-16 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -right-16 -top-16 w-64 h-64 bg-white dark:bg-slate-900/5 rounded-full blur-3xl pointer-events-none"></div>
         </section>
       )}
 
@@ -326,7 +332,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
         className="cursor-pointer bg-gradient-to-r from-blue-900 to-indigo-950 hover:from-blue-850 hover:to-indigo-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border border-blue-950/20 active:scale-[0.99] transition-all"
       >
         <div className="flex gap-4 items-center">
-          <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+          <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-900/10 flex items-center justify-center shrink-0 border border-white/20">
             <Sparkles className="w-6 h-6 text-amber-400 animate-pulse" />
           </div>
           <div>
@@ -338,7 +344,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
             </p>
           </div>
         </div>
-        <button className="bg-white text-blue-900 hover:bg-slate-50 transition-colors font-extrabold text-[11px] tracking-wider uppercase px-4.5 py-2.5 rounded-lg shrink-0 shadow-xs cursor-pointer">
+        <button className="bg-white dark:bg-slate-900 text-blue-900 hover:bg-slate-50 dark:bg-slate-800/60 transition-colors font-extrabold text-[11px] tracking-wider uppercase px-4.5 py-2.5 rounded-lg shrink-0 shadow-xs cursor-pointer">
           Ouvrir l'assistant
         </button>
       </section>
