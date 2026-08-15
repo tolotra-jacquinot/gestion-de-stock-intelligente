@@ -15,6 +15,7 @@ from django.utils.http import (
     urlsafe_base64_decode,
 )
 from django.utils.encoding import force_bytes
+from django.conf import settings
 
 User = get_user_model()
 
@@ -42,8 +43,8 @@ def forgot_password(request):
         send_mail(
             subject="Réinitialisation du mot de passe",
             message=f"Cliquez ici : {reset_link}",
-            from_email="tolotrajacquinot@gmail.com",
-            recipient_list=[email],
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
             fail_silently=False,
         )
 
