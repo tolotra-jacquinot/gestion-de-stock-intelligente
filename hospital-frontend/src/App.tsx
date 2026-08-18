@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Activity, Search, Bell, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
 
 import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole } from './types';
-import { initialProducts, initialMovements } from './data';
+import { initialMovements } from './data';
 
 import LoginView from './components/LoginView';
 import ResetPassword from "./components/ResetPassword";
@@ -28,22 +28,91 @@ const defaultUsers: UserAccount[] = [
 ];
 
 // Status computer helper
-function computeProductStatus(stock: number, minStock: number, expiration: string): 'CRITIQUE' | 'ATTENTION' | 'OK' | 'PÉREMPTION' | 'RUPTURE' {
+function computeProductStatus(
+  stock: number,
+  minStock: number,
+  expiration: string
+): 'CRITIQUE' | 'ATTENTION' | 'OK' | 'PÉREMPTION' | 'RUPTURE' {
   if (stock === 0) return 'RUPTURE';
-  if (expiration === 'PROCHE' || expiration.toLowerCase() === 'proche' || expiration === '12/2024') return 'PÉREMPTION';
+
+  if (
+    expiration === 'PROCHE' ||
+    expiration.toLowerCase() === 'proche' ||
+    expiration === '12/2024'
+  ) {
+    return 'PÉREMPTION';
+  }
+
   if (stock < minStock) return 'CRITIQUE';
+
   if (stock <= minStock * 1.5) return 'ATTENTION';
+
   return 'OK';
 }
+
+const mapApiProductToProduct = (apiProduct: any): Product => ({
+  id: String(apiProduct.id),
+  name: apiProduct.name,
+  code: apiProduct.code,
+  category: apiProduct.category,
+  stock: apiProduct.stock,
+  minStock: apiProduct.min_stock,
+  maxStock: apiProduct.max_stock,
+  expiration: apiProduct.expiration,
+  location: apiProduct.location,
+  packaging: apiProduct.packaging,
+  unitPrice: Number(apiProduct.unit_price),
+  active: apiProduct.active,
+  status: computeProductStatus(
+    apiProduct.stock,
+    apiProduct.min_stock,
+    apiProduct.expiration
+  ),
+});
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   
   // Load products and movements state from localStorage or use initial mock data
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('hospital_inventory_products');
-    return saved ? JSON.parse(saved) : initialProducts;
-  });
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+  const fetchProducts = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/products/",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erreur API : ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const formattedProducts = data.map(mapApiProductToProduct);
+
+      setProducts(formattedProducts);
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des produits :",
+        error
+      );
+    }
+  };
+
+  fetchProducts();
+}, [currentUser]);
 
   const [movements, setMovements] = useState<Movement[]>(() => {
     const saved = localStorage.getItem('hospital_inventory_movements');
@@ -64,10 +133,6 @@ export default function App() {
   const [quickMoveType, setQuickMoveType] = useState<MovementType | null>(null);
 
   // Sync to localStorage
-  useEffect(() => {
-    localStorage.setItem('hospital_inventory_products', JSON.stringify(products));
-  }, [products]);
-
   useEffect(() => {
     localStorage.setItem('hospital_inventory_movements', JSON.stringify(movements));
   }, [movements]);
