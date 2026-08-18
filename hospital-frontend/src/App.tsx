@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Routes, Route } from "react-router-dom";
 import ForgotPassword from "./components/ForgotPassword";
 import React, { useState, useEffect } from 'react';
@@ -49,10 +50,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : initialMovements;
   });
 
-  const [users, setUsers] = useState<UserAccount[]>(() => {
-    const saved = localStorage.getItem('hospital_inventory_users');
-    return saved ? JSON.parse(saved) : defaultUsers;
-  });
+  const [users, setUsers] = useState<UserAccount[]>([]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
@@ -77,6 +75,59 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('hospital_inventory_users', JSON.stringify(users));
   }, [users]);
+  
+  useEffect(() => {
+      fetchUsers();
+  }, []);
+
+
+  const fetchUsers = async () => {
+
+      try {
+
+          const token = localStorage.getItem("token");
+
+          const response = await axios.get(
+              "http://127.0.0.1:8000/api/users/",
+              {
+                  headers:{
+                      Authorization:`Bearer ${token}`
+                  }
+              }
+          );
+
+
+          const data = response.data.map((u:any)=>({
+
+              id:String(u.id),
+
+              name:u.username,
+
+              email:u.email,
+
+              role:u.role,
+
+              createdAt:u.createdAt
+
+          }));
+
+
+          console.log("Utilisateurs Django :", data);
+
+
+          setUsers(data);
+
+
+      } catch(error){
+
+          console.error(
+              "Erreur récupération utilisateurs",
+              error
+          );
+
+      }
+
+    };
 
   // Helper date
   const getFormattedDateShort = () => {
