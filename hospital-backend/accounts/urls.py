@@ -4,7 +4,8 @@ from .views import (
     login,
     forgot_password,
     reset_password,
-    users_list,
+    users_list_create,
+    user_detail,
     TestAuthView,
 )
 
@@ -29,7 +30,14 @@ urlpatterns = [
 
     path(
         "users/",
-        users_list
+        users_list_create,
+        name="users_list_create",
+    ),
+
+    path(
+        "users/<int:user_id>/",
+        user_detail,
+        name="user_detail",
     ),
 
     path(

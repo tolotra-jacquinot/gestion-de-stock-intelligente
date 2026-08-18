@@ -2,7 +2,6 @@ from rest_framework.permissions import BasePermission
 
 
 class IsAdmin(BasePermission):
-
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
@@ -11,7 +10,6 @@ class IsAdmin(BasePermission):
 
 
 class IsPharmacien(BasePermission):
-
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
@@ -20,7 +18,6 @@ class IsPharmacien(BasePermission):
 
 
 class IsMagasinier(BasePermission):
-
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
@@ -29,17 +26,15 @@ class IsMagasinier(BasePermission):
 
 
 class IsDirecteur(BasePermission):
-
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
             and request.user.role == "directeur"
         )
 
+
 class IsAdminOrMagasinier(BasePermission):
-
     def has_permission(self, request, view):
-
         return (
             request.user.is_authenticated
             and request.user.role in [
@@ -48,8 +43,7 @@ class IsAdminOrMagasinier(BasePermission):
             ]
         )
 
+
 class IsConnected(BasePermission):
-
     def has_permission(self, request, view):
-
         return request.user.is_authenticated
