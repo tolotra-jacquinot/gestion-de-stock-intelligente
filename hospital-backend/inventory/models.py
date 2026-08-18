@@ -41,3 +41,57 @@ class StockMovement(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - {self.movement_type} ({self.quantity})"
+
+class RestockOrder(models.Model):
+
+    STATUS_CHOICES = [
+        ("PENDING", "En attente"),
+        ("ORDERED", "Commandée"),
+        ("RECEIVED", "Réceptionnée"),
+        ("CANCELLED", "Annulée"),
+    ]
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="restock_orders",
+    )
+
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="restock_orders",
+    )
+
+    quantity = models.PositiveIntegerField()
+
+    supplier = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    received_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    def __str__(self):
+        return (
+            f"{self.product.name} - "
+            f"{self.quantity} unités - "
+            f"{self.status}"
+        )
