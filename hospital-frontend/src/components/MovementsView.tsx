@@ -146,7 +146,7 @@ export default function MovementsView({ movements, onSelectProductByName, onOpen
       </div>
 
       {/* Floating Action Button (FAB) Menu Overlay */}
-      {role !== 'responsable' && (
+      {(role === 'admin' || role === 'magasinier') && (
         <div className="fixed bottom-24 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
           
           {/* Sub-menu options */}
