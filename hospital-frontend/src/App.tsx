@@ -1,0 +1,1325 @@
+import { Routes, Route } from "react-router-dom";
+import ForgotPassword from "./components/ForgotPassword";
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
+
+import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole } from './types';
+import { apiFetch } from "./api";
+
+import LoginView from './components/LoginView';
+import ResetPassword from "./components/ResetPassword";
+import DashboardView from './components/DashboardView';
+import StockView from './components/StockView';
+import MovementsView from './components/MovementsView';
+import ProfilView from './components/ProfilView';
+import ProductDetailsView from './components/ProductDetailsView';
+import AddProductModal from './components/AddProductModal';
+import QuickMovementModal from './components/QuickMovementModal';
+import UsersManagementView from './components/UsersManagementView';
+import AssistantIAView from './components/AssistantIAView';
+import Toast, { ToastType } from "./components/Toast";
+
+// Status computer helper
+function computeProductStatus(
+  stock: number,
+  minStock: number,
+  expiration: string
+): 'CRITIQUE' | 'ATTENTION' | 'OK' | 'PÉREMPTION' | 'RUPTURE' {
+  if (stock === 0) return 'RUPTURE';
+
+  if (
+    expiration === 'PROCHE' ||
+    expiration.toLowerCase() === 'proche' ||
+    expiration === '12/2024'
+  ) {
+    return 'PÉREMPTION';
+  }
+
+  if (stock < minStock) return 'CRITIQUE';
+
+  if (stock <= minStock * 1.5) return 'ATTENTION';
+
+  return 'OK';
+}
+
+const mapApiProductToProduct = (apiProduct: any): Product => ({
+  id: String(apiProduct.id),
+  name: apiProduct.name,
+  code: apiProduct.code,
+  category: apiProduct.category,
+  stock: apiProduct.stock,
+  minStock: apiProduct.min_stock,
+  maxStock: apiProduct.max_stock,
+  expiration: apiProduct.expiration,
+  location: apiProduct.location,
+  packaging: apiProduct.packaging,
+  unitPrice: Number(apiProduct.unit_price),
+  active: apiProduct.active,
+  status: computeProductStatus(
+    apiProduct.stock,
+    apiProduct.min_stock,
+    apiProduct.expiration
+  ),
+});
+
+const mapApiUserToUserAccount = (apiUser: any): UserAccount => ({
+  id: String(apiUser.id),
+  name: apiUser.username,
+  email: apiUser.email || "",
+  role: apiUser.role,
+  createdAt: new Date(apiUser.date_joined).toLocaleDateString("fr-FR"),
+});
+
+const mapApiMovementToMovement = (
+  apiMovement: any,
+  products: Product[]
+): Movement => {
+  const product = products.find(
+    (p) => p.id === String(apiMovement.product)
+  );
+
+  return {
+    id: String(apiMovement.id),
+    productId: String(apiMovement.product),
+    productName: product?.name || `Produit #${apiMovement.product}`,
+    type: apiMovement.movement_type === "ENTRY" ? "Entrée" : "Sortie",
+    quantity: apiMovement.quantity,
+    user: apiMovement.user_name || `Utilisateur #${apiMovement.user}`,
+    destination: apiMovement.reason || "",
+    timestamp: new Date(apiMovement.created_at).toLocaleString("fr-FR"),
+  };
+};
+
+interface DashboardStats {
+  total_products: number;
+  out_of_stock: number;
+  critical_stock: number;
+  expired: number;
+  expiring_soon: number;
+  recent_movements: {
+    id: number;
+    product: string;
+    movement_type: string;
+    quantity: number;
+    user: string;
+    created_at: string;
+  }[];
+}
+
+export default function App() {
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+
+  const [toast, setToast] = useState<{ message: string; type: ToastType; } | null>(null);
+
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme) {
+      return savedTheme === "dark";
+    }
+
+    return window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+  });
+
+  const showToast = (
+    message: string,
+    type: ToastType = "success"
+  ) => {
+    setToast({
+      message,
+      type,
+    });
+  };
+
+  useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [toast]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (isDarkMode) {
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
+
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+  const fetchProducts = async () => {
+
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/products/"
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erreur API : ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const formattedProducts = data
+        .filter((product: any) => product.active === true)
+        .map(mapApiProductToProduct);
+
+      setProducts(formattedProducts);
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des produits :",
+        error
+      );
+    }
+  };
+
+  fetchProducts();
+}, [currentUser]);
+
+  useEffect(() => {
+  const fetchMovements = async () => {
+    if (!currentUser || products.length === 0) {
+      return;
+    }
+
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/movements/"
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erreur API : ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const formattedMovements = data.map((movement: any) =>
+        mapApiMovementToMovement(movement, products)
+      );
+
+      setMovements(formattedMovements);
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des mouvements :",
+        error
+      );
+    }
+  };
+
+  fetchMovements();
+}, [currentUser, products]);
+
+const [movements, setMovements] = useState<Movement[]>([]);
+
+useEffect(() => {
+  const fetchDashboardStats = async () => {
+    if (!currentUser) {
+      return;
+    }
+
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/dashboard/stats/"
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erreur API : ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      setDashboardStats(data);
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des statistiques du dashboard :",
+        error
+      );
+    }
+  };
+
+  fetchDashboardStats();
+}, [currentUser, products, movements]);
+
+  const [stockAlerts, setStockAlerts] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchStockAlerts = async () => {
+      if (!currentUser) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          "http://127.0.0.1:8000/api/alerts/"
+        );
+
+        if (!response.ok) {
+          throw new Error(`Erreur API : ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setStockAlerts(data);
+      } catch (error) {
+        console.error(
+          "Erreur lors du chargement des alertes de stock :",
+          error
+        );
+      }
+    };
+
+    fetchStockAlerts();
+  }, [currentUser, products, movements]);
+
+  const [users, setUsers] = useState<UserAccount[]>([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!currentUser || currentUser.role !== "admin") {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          "http://127.0.0.1:8000/api/auth/users/"
+        );
+
+        if (!response.ok) {
+          throw new Error(`Erreur API : ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setUsers(
+          data.map(mapApiUserToUserAccount)
+        );
+      } catch (error) {
+        console.error(
+          "Erreur lors du chargement des utilisateurs :",
+          error
+        );
+      }
+    };
+
+    fetchUsers();
+  }, [currentUser]);
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
+    ruptureAlerts: true,
+    expirationAlerts: true
+  });
+
+  // Modal open states
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [quickMoveType, setQuickMoveType] = useState<MovementType | null>(null);
+
+  // Helper date
+  const getFormattedDateShort = () => {
+    const d = new Date();
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  const handleAddUser = async (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/auth/users/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: name,
+            email,
+            password,
+            role,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur création utilisateur :",
+          errorData
+        );
+
+        showToast(
+          "Impossible de créer l'utilisateur.",
+          "error"
+        );
+
+        return false;
+      }
+
+      const createdUser = await response.json();
+
+      setUsers((prev) => [
+        ...prev,
+        mapApiUserToUserAccount(createdUser),
+      ]);
+
+      showToast(
+        "Utilisateur créé avec succès.",
+        "success"
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Erreur lors de la création de l'utilisateur :",
+        error
+      );
+
+      return false;
+    }
+  };
+
+  const handleUpdateUserRole = async (
+    id: string,
+    role: UserRole
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/auth/users/${id}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            role,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur modification rôle utilisateur :",
+          errorData
+        );
+
+        showToast(
+          "Impossible de modifier le rôle.",
+          "error"
+        );
+
+        return false;
+      }
+
+      const updatedUser = await response.json();
+
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === id
+            ? mapApiUserToUserAccount(updatedUser)
+            : user
+        )
+      );
+
+      showToast(
+        "Rôle utilisateur modifié avec succès.",
+        "success"
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Erreur lors de la modification du rôle :",
+        error
+      );
+
+      showToast(
+        "Impossible de modifier le rôle.",
+        "error"
+      );
+
+      return false;
+    }
+  };
+
+  const handleDeleteUser = async (
+    id: string
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/auth/users/${id}/`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        let errorData = null;
+
+        try {
+          errorData = await response.json();
+        } catch {
+          // DELETE 204 n'a pas de body
+        }
+
+        console.error(
+          "Erreur suppression utilisateur :",
+          errorData
+        );
+
+        showToast(
+          "Impossible de supprimer l'utilisateur.",
+          "error"
+        );
+
+        return false;
+      }
+
+      setUsers((prev) =>
+        prev.filter((user) => user.id !== id)
+      );
+
+      showToast(
+        "Utilisateur supprimé avec succès.",
+        "success"
+      );
+
+      return true;
+
+    } catch (error) {
+      console.error(
+        "Erreur lors de la suppression de l'utilisateur :",
+        error
+      );
+
+      showToast(
+        "Impossible de supprimer l'utilisateur.",
+        "error"
+      );
+
+      return false;
+    }
+  };
+
+  // Handle Login success
+  const handleLoginSuccess = (user: UserProfile) => {
+    setCurrentUser(user);
+    setActiveTab('dashboard');
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setActiveTab('dashboard');
+  };
+
+  // Helper helper to format current date/time
+  const getFormattedDateTime = () => {
+    const d = new Date();
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+    const day = d.getDate();
+    const month = months[d.getMonth()];
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month}, ${hours}:${minutes}`;
+  };
+
+  // Action: Approve Order recommendation
+  const handleApproveOrder = (productId: string, quantity: number) => {
+    setProducts(prev => prev.map(p => {
+      if (p.id === productId) {
+        const newStock = p.stock + quantity;
+        const newStatus = computeProductStatus(newStock, p.minStock, p.expiration);
+        return {
+          ...p,
+          stock: newStock,
+          status: newStatus
+        };
+      }
+      return p;
+    }));
+
+    const prod = products.find(p => p.id === productId);
+    if (prod) {
+      const isEmergency = prod.status === 'CRITIQUE' || prod.status === 'RUPTURE';
+      const newMove: Movement = {
+        id: `mov-${Date.now()}`,
+        productId: productId,
+        productName: prod.name,
+        type: 'Entrée',
+        quantity: quantity,
+        user: 'Dr. Martin',
+        destination: 'Fournisseur MedLab',
+        timestamp: getFormattedDateTime(),
+        isEmergency
+      };
+      setMovements(prev => [newMove, ...prev]);
+    }
+  };
+
+  // Action: Register movement (Entrée or Sortie)
+// Action: Register movement through Django API
+const handleRegisterMove = async (
+  productId: string,
+  quantity: number,
+  type: MovementType,
+  destination: string
+) => {
+  try {
+    const response = await apiFetch(
+      "http://127.0.0.1:8000/api/movements/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          product: Number(productId),
+          movement_type: type === "Entrée" ? "ENTRY" : "EXIT",
+          quantity,
+          reason: destination,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error(
+        "Erreur création mouvement :",
+        errorData
+      );
+
+      showToast(
+        "Impossible d'enregistrer le mouvement.",
+        "error"
+      );
+
+      return;
+    }
+
+    const createdMovement = await response.json();
+
+    setMovements((prev) => [
+      mapApiMovementToMovement(createdMovement, products),
+      ...prev,
+    ]);
+
+    // Recharger les produits pour récupérer le nouveau stock calculé par Django
+    const productsResponse = await apiFetch(
+      "http://127.0.0.1:8000/api/products/"
+    );
+
+    if (productsResponse.ok) {
+      const productsData = await productsResponse.json();
+
+      setProducts(
+        productsData.map(mapApiProductToProduct)
+      );
+    }
+
+    setQuickMoveType(null);
+
+    showToast(
+      type === "Entrée"
+        ? "Entrée de stock enregistrée."
+        : "Sortie de stock enregistrée.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "Erreur lors de l'enregistrement du mouvement :",
+      error
+    );
+
+    showToast(
+      "Impossible d'enregistrer le mouvement.",
+      "error"
+    );
+  }
+};
+// Action: Save product through Django API
+const handleSaveProduct = async (data: {
+  name: string;
+  category: any;
+  stock: number;
+  minStock: number;
+  maxStock: number;
+  expiration: string;
+  packaging: string;
+  unitPrice: number;
+  location: string;
+}) => {
+
+  const codePrefixes: Record<string, string> = {
+    Médicaments: "MED",
+    Dispositifs: "DSP",
+    Solutés: "SLT",
+  };
+
+  const prefix = codePrefixes[data.category] || "PRD";
+  const randomNum = Math.floor(100 + Math.random() * 900);
+  const code = `${prefix}-${randomNum}-CP`;
+
+  try {
+    const response = await apiFetch(
+      "http://127.0.0.1:8000/api/products/",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          code: code,
+          category: data.category,
+          stock: data.stock,
+          min_stock: data.minStock,
+          max_stock: data.maxStock,
+          expiration: data.expiration,
+          location: data.location,
+          packaging: data.packaging,
+          unit_price: data.unitPrice,
+          supplier: "",
+          active: true,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Erreur création produit :", errorData);
+
+      showToast(
+        "Impossible de créer le produit.",
+        "error"
+      );
+
+      return;
+    }
+
+    const createdProduct = await response.json();
+
+    setProducts((prev) => [
+      mapApiProductToProduct(createdProduct),
+      ...prev,
+    ]);
+
+    setIsAddOpen(false);
+
+    showToast(
+      "Produit créé avec succès.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(
+      "Erreur lors de la création du produit :",
+      error
+    );
+
+    showToast(
+      "Impossible de créer le produit.",
+      "error"
+    );
+
+  }
+};
+
+  const handleChangePassword = async (oldPass: string, newPass: string) => {
+    // Simulating password modification check
+    return new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        resolve(true);
+      }, 500);
+    });
+  };
+
+  const handleUpdateProduct = async (
+    productId: string,
+    data: {
+      name: string;
+      category: any;
+      minStock: number;
+      maxStock: number;
+      expiration: string;
+      packaging: string;
+      unitPrice: number;
+      location: string;
+    }
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/products/${productId}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: data.name,
+            category: data.category,
+            min_stock: data.minStock,
+            max_stock: data.maxStock,
+            expiration: data.expiration,
+            packaging: data.packaging,
+            unit_price: data.unitPrice,
+            location: data.location,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur modification produit :",
+          errorData
+        );
+
+        return false;
+      }
+
+      const updatedProduct = await response.json();
+
+      const formattedProduct =
+        mapApiProductToProduct(updatedProduct);
+
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === productId
+            ? formattedProduct
+            : product
+        )
+      );
+
+      showToast(
+        "Produit modifié avec succès.",
+        "success"
+      );
+
+      return true;
+
+    } catch (error) {
+      console.error(
+        "Erreur lors de la modification du produit :",
+        error
+      );
+
+      showToast(
+        "Impossible de modifier le produit.",
+        "error"
+      );
+
+      return false;
+    }
+  };
+
+  const handleArchiveProduct = async (
+    productId: string
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/products/${productId}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            active: false,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur archivage produit :",
+          errorData
+        );
+
+        showToast(
+          "Impossible d'archiver le produit.",
+          "error"
+        );
+
+        return false;
+      }
+
+      setProducts((prev) =>
+        prev.filter((product) => product.id !== productId)
+      );
+
+      setSelectedProductId(null);
+      setActiveTab("stock");
+
+      showToast(
+        "Produit archivé avec succès.",
+        "success"
+      );
+
+      return true;
+
+    } catch (error) {
+      console.error(
+        "Erreur lors de l'archivage du produit :",
+        error
+      );
+
+      showToast(
+        "Impossible d'archiver le produit.",
+        "error"
+      );
+
+      return false;
+    }
+  };
+
+  const handleSelectProduct = (productId: string) => {
+    setSelectedProductId(productId);
+    setActiveTab('product-details');
+  };
+
+  const handleSelectProductByName = (productName: string) => {
+    const prod = products.find(p => p.name.toLowerCase() === productName.toLowerCase() || productName.toLowerCase().includes(p.name.toLowerCase()));
+    if (prod) {
+      setSelectedProductId(prod.id);
+      setActiveTab('product-details');
+    } else {
+      setActiveTab('stock');
+    }
+  };
+
+  // Login guard redirect if session has not started yet
+  if (!currentUser) {
+  return (
+    <Routes>
+
+      <Route
+        path="/"
+        element={
+          <LoginView
+            onLoginSuccess={handleLoginSuccess}
+          />
+        }
+      />
+
+      <Route
+        path="/forgot-password"
+        element={<ForgotPassword />}
+      />
+      <Route
+        path="/reset-password/:uidb64/:token"
+        element={<ResetPassword />}
+      />
+
+    </Routes>
+  );
+}
+
+  const selectedProduct = products.find(p => p.id === selectedProductId);
+  const selectedProductMovements = movements.filter(m => m.productId === selectedProductId);
+
+  const getRoleLabel = (role: UserRole) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrateur';
+
+      case 'pharmacien':
+        return 'Pharmacien';
+
+      case 'magasinier':
+        return 'Magasinier';
+
+      case 'directeur':
+        return 'Directeur';
+
+      default:
+        return 'Utilisateur';
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Dynamic Top Navigation Header */}
+      <header className="fixed top-0 left-0 right-0 h-16 z-40 bg-white border-b border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center px-4 md:px-6 transition-colors">
+        <div className="flex items-center gap-2.5">
+          <Activity className="w-6 h-6 text-blue-800" />
+          <h1 className="text-lg font-extrabold text-blue-900 dark:text-blue-300 tracking-tight">
+            Gestion de Stock
+          </h1>
+        </div>
+        <div className="flex items-center gap-3">
+
+          {/* ✅ BOUTON MODE CLAIR / SOMBRE */}
+          <button
+            type="button"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className="p-2 rounded-full transition-colors text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            title={
+              isDarkMode
+                ? "Passer en mode clair"
+                : "Passer en mode sombre"
+            }
+          >
+            {isDarkMode ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+          </button>
+
+          {/* Search */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('stock')}
+            className="p-1.5 hover:bg-slate-150 rounded-full transition-colors text-slate-500"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
+        </div>
+      </header>
+
+      {/* Desktop Responsive Sidebar Rail Container */}
+      <aside className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex-col p-4 z-30 transition-colors">
+        <div className="space-y-1.5 flex-grow font-sans">
+          
+          {/* Dashboard Tab */}
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'dashboard' 
+                ? 'bg-blue-800 text-white shadow-xs' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Home className="w-5 h-5 stroke-[2]" />
+            <span>Tableau de bord</span>
+          </button>
+
+          {/* Inventaire / Stock Tab */}
+          <button 
+            onClick={() => setActiveTab('stock')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'stock' || activeTab === 'product-details'
+                ? 'bg-blue-800 text-white shadow-xs' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Package className="w-5 h-5 stroke-[2]" />
+            <span>Inventaire Stock</span>
+          </button>
+
+          {/* Mouvements timeline Tab */}
+          <button 
+            onClick={() => setActiveTab('movements')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'movements'
+                ? 'bg-blue-800 text-white shadow-xs' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <ArrowLeftRight className="w-5 h-5 stroke-[2]" />
+            <span>Historique</span>
+          </button>
+
+          {/* Assistant IA Tab */}
+          <button 
+            onClick={() => setActiveTab('assistant')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'assistant'
+                ? 'bg-blue-800 text-white shadow-xs' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-5 h-5 stroke-[2] text-amber-500" />
+            <span>Assistant IA</span>
+          </button>
+
+          {/* Admin Utilisateurs Tab */}
+          {currentUser.role === 'admin' && (
+            <button 
+              onClick={() => setActiveTab('users')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
+                activeTab === 'users'
+                  ? 'bg-blue-800 text-white shadow-xs' 
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              <Users className="w-5 h-5 stroke-[2]" />
+              <span>Utilisateurs</span>
+            </button>
+          )}
+
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`
+            w-full flex items-center gap-3 p-3 rounded-xl
+            border transition-all text-left
+            ${
+              activeTab === 'profile'
+                ? 'bg-slate-100 border-slate-300 dark:bg-slate-800 dark:border-slate-700'
+                : 'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
+            }
+          `}
+        >
+          <div className="w-10 h-10 rounded-full bg-blue-800 text-white flex items-center justify-center shrink-0 font-bold text-sm">
+            {(currentUser.name || currentUser.email || 'Utilisateur')
+              .split(' ')
+              .filter(Boolean)
+              .map((part) => part[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold truncate text-slate-800 dark:text-slate-100">
+              {currentUser.name || currentUser.email || 'Utilisateur'}
+            </p>
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {getRoleLabel(currentUser.role)}
+            </p>
+          </div>
+
+          <span className="text-slate-400 dark:text-slate-500 text-lg leading-none">
+            ›
+          </span>
+        </button>
+
+      </aside>
+
+      {/* Main Core Router Workspace Panel */}
+      <main className="flex-grow pt-24 pb-28 md:pb-12 md:pl-70 px-4 max-w-6xl mx-auto w-full">
+        
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.15 }}
+          >
+            
+            {activeTab === 'dashboard' && (
+              <DashboardView 
+                products={products} 
+                movements={movements} 
+                stats={dashboardStats}
+                alerts={stockAlerts}
+                onSelectProduct={handleSelectProduct} 
+                role={currentUser.role}
+                onNavigateToAssistant={() => setActiveTab('assistant')}
+              />
+            )}
+
+            {activeTab === 'stock' && (
+              <StockView 
+                products={products} 
+                onSelectProduct={handleSelectProduct}
+                onAddProduct={() => setIsAddOpen(true)}
+                role={currentUser.role}
+              />
+            )}
+
+            {activeTab === 'movements' && (
+              <MovementsView 
+                movements={movements} 
+                onSelectProductByName={handleSelectProductByName}
+                onOpenQuickMovement={(type) => setQuickMoveType(type)}
+                role={currentUser.role}
+              />
+            )}
+
+            {activeTab === 'assistant' && (
+              <AssistantIAView 
+                products={products}
+                movements={movements}
+              />
+            )}
+
+            {activeTab === 'profile' && (
+              <ProfilView 
+                user={currentUser} 
+                prefs={notificationPrefs} 
+                onUpdatePrefs={setNotificationPrefs}
+                onLogout={handleLogout}
+                onChangePassword={handleChangePassword}
+              />
+            )}
+
+            {activeTab === 'users' && currentUser.role === 'admin' && (
+              <UsersManagementView
+                users={users}
+                onAddUser={handleAddUser}
+                onUpdateUserRole={handleUpdateUserRole}
+                onDeleteUser={handleDeleteUser}
+              />
+            )}
+
+            {activeTab === 'product-details' && selectedProduct && (
+              <ProductDetailsView 
+                product={selectedProduct} 
+                productMovements={selectedProductMovements}
+                onBack={() => setActiveTab('stock')}
+                onApproveOrder={handleApproveOrder}
+                onRegisterMove={handleRegisterMove}
+                onUpdateProduct={handleUpdateProduct}
+                onArchiveProduct={handleArchiveProduct}
+                role={currentUser.role}
+              />
+            )}
+
+          </motion.div>
+        </AnimatePresence>
+
+      </main>
+
+      {/* Mobile Responsive Persistent Safe Area Bottom Bar Header */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex justify-around items-center z-40 pb-safe shadow-md select-none transition-colors">
+        
+        {/* Dashboard Tab */}
+        <button 
+          onClick={() => setActiveTab('dashboard')}
+          className={`flex flex-col items-center justify-center w-16 transition-all ${
+            activeTab === 'dashboard' 
+              ? 'text-blue-800 font-extrabold scale-105' 
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          <Home className="w-5 h-5 text-current stroke-[2]" />
+          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Tableau de bord</span>
+        </button>
+
+        {/* Inventory Tab */}
+        <button 
+          onClick={() => setActiveTab('stock')}
+          className={`flex flex-col items-center justify-center w-16 transition-all ${
+            activeTab === 'stock' || activeTab === 'product-details'
+              ? 'text-blue-800 font-extrabold scale-105' 
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          <Package className="w-5 h-5 text-current stroke-[2]" />
+          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Stock</span>
+        </button>
+
+        {/* Movements Tab */}
+        <button 
+          onClick={() => setActiveTab('movements')}
+          className={`flex flex-col items-center justify-center w-18 transition-all ${
+            activeTab === 'movements' 
+              ? 'text-blue-800 font-extrabold scale-105' 
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          <ArrowLeftRight className="w-5 h-5 text-current stroke-[2]" />
+          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Mouvements</span>
+        </button>
+
+        {/* Assistant Tab */}
+        <button 
+          onClick={() => setActiveTab('assistant')}
+          className={`flex flex-col items-center justify-center w-16 transition-all ${
+            activeTab === 'assistant' 
+              ? 'text-blue-800 font-extrabold scale-105' 
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          <Sparkles className="w-5 h-5 text-amber-500 stroke-[2]" />
+          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Assistant IA</span>
+        </button>
+
+        {/* Profile Tab */}
+        <button 
+          onClick={() => setActiveTab('profile')}
+          className={`flex flex-col items-center justify-center w-16 transition-all ${
+            activeTab === 'profile' 
+              ? 'text-blue-800 font-extrabold scale-105' 
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          <User className="w-5 h-5 text-current stroke-[2]" />
+          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Profil</span>
+        </button>
+
+        {/* Admin Users Tab (Mobile) */}
+        {currentUser.role === 'admin' && (
+          <button 
+            onClick={() => setActiveTab('users')}
+            className={`flex flex-col items-center justify-center w-16 transition-all ${
+              activeTab === 'users' 
+                ? 'text-blue-800 font-extrabold scale-105' 
+                : 'text-slate-400 hover:text-slate-650'
+            }`}
+          >
+            <Users className="w-5 h-5 text-current stroke-[2]" />
+            <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Utilisateurs</span>
+          </button>
+        )}
+
+      </nav>
+
+      {/* Global Modals overlay wrapper container */}
+      {isAddOpen && (
+        <AddProductModal 
+          onClose={() => setIsAddOpen(false)}
+          onSave={handleSaveProduct}
+        />
+      )}
+
+      {quickMoveType && (
+        <QuickMovementModal 
+          products={products}
+          type={quickMoveType}
+          onClose={() => setQuickMoveType(null)}
+          onSave={handleRegisterMove}
+        />
+      )}
+
+    </div>
+  );
+}
+
+
