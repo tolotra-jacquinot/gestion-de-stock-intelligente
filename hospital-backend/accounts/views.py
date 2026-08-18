@@ -42,11 +42,14 @@ def login(request):
 
         refresh = RefreshToken.for_user(user)
 
-        return Response({
-            "token": str(refresh.access_token),
-            "username": user.username,
-            "role": user.role,
-        })
+        return Response(
+            {
+                "token": str(refresh.access_token),
+                "refresh": str(refresh),
+                "username": user.username,
+                "role": user.role,
+            }
+        )
 
     return Response(
         {"error": "Identifiants invalides"},
