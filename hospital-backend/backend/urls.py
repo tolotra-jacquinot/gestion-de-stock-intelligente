@@ -9,4 +9,6 @@ urlpatterns = [
 
     # Produits
     path("api/", include("products.urls")),
+
+    path("api/", include("inventory.urls")),
 ]
