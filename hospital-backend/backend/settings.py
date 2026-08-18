@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'accounts',
     'django_extensions',
     'products',
+    'inventory',
 ]
 
 REST_FRAMEWORK = {
