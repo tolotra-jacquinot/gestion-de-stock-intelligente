@@ -33,6 +33,7 @@ export default function AssistantIAView({ products, movements }: AssistantIAView
   const [inputVal, setInputVal] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState('');
+  const [resetModalOpen, setResetModalOpen] = useState(false);
   
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -175,12 +176,15 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
     }
   };
 
-  const handleClearChat = () => {
-    if (window.confirm("Voulez-vous réinitialiser la conversation avec le conseiller IA ?")) {
-      localStorage.removeItem('hospital_inventory_ai_chat');
-      loadDefaultGreetings();
-    }
-  };
+      const handleClearChat = () => {
+        setResetModalOpen(true);
+      };
+
+      const confirmClearChat = () => {
+        localStorage.removeItem('hospital_inventory_ai_chat');
+        loadDefaultGreetings();
+        setResetModalOpen(false);
+      };
 
   // Dynamic Suggestion lists matching the user's prompt
   const suggestions = [
@@ -201,18 +205,18 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="bg-blue-50 text-blue-800 p-1.5 rounded-lg border border-blue-100">
+            <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 p-1.5 rounded-lg border border-blue-100 dark:border-blue-900/50">
               <Sparkles className="w-5 h-5 text-blue-700 animate-pulse" />
             </div>
-            <h2 className="text-2xl font-black text-slate-800 leading-none">Stock Assistant IA</h2>
+            <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 leading-none">Stock Assistant IA</h2>
           </div>
-          <p className="text-sm text-slate-500 mt-1.5">Assistant conversationnel intelligent spécialisé dans la logistique pharmaceutique et clinique.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5">Assistant conversationnel intelligent spécialisé dans la logistique pharmaceutique et clinique.</p>
         </div>
         
         {/* Reset button */}
         <button
           onClick={handleClearChat}
-          className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors self-start sm:self-auto"
+          className="w-10 h-10 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-800 transition-colors self-start sm:self-auto"
           title="Réinitialiser la conversation"
         >
           <RotateCcw className="w-4 h-4" />
@@ -222,29 +226,29 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
         {/* Main Chat Panel */}
-        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs flex flex-col h-[600px]">
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs flex flex-col h-[600px] transition-colors">
           
           {/* Header of Chat */}
-          <div className="bg-slate-50 border-b border-slate-150 p-4 flex items-center justify-between select-none shrink-0">
+          <div className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between select-none shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-8 active:scale-95 h-8 bg-blue-800 text-white rounded-full flex items-center justify-center">
                 <Bot className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-black text-slate-800 uppercase leading-tight tracking-wider">Moteur d'Analyse IA</p>
+                <p className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase leading-tight tracking-wider">Moteur d'Analyse IA</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   <p className="text-[10px] text-slate-400 font-bold">Connecté au stock direct</p>
                 </div>
               </div>
             </div>
-            <div className="text-[10px] uppercase font-black tracking-wider bg-blue-50 text-blue-800 px-2 py-1 rounded-md border border-blue-100">
+            <div className="text-[10px] uppercase font-black tracking-wider bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-900/50">
               Modèle: Gemini 3.5 Flash
             </div>
           </div>
 
           {/* Message Pool */}
-          <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/20">
+          <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-slate-50/20 dark:bg-slate-950/20">
             {messages.map((item) => {
               const isAI = item.role === 'assistant';
               return (
@@ -254,7 +258,7 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border select-none ${
                     isAI 
                       ? 'bg-blue-50 text-blue-800 border-blue-100' 
-                      : 'bg-slate-100 text-slate-700 border-slate-200'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                   }`}>
                     {isAI ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </div>
@@ -263,7 +267,7 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
                   <div className="space-y-1">
                     <div className={`p-3.5 rounded-xl text-xs leading-relaxed ${
                       isAI 
-                        ? 'bg-white text-slate-875 border border-slate-200' 
+                        ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700'
                         : 'bg-blue-800 text-white font-medium'
                     }`}>
                       {/* Very brief renderer helper to support Markdown bold lists cleanly */}
@@ -273,7 +277,7 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
                           if (line.trim().startsWith('*')) {
                             const withoutAsterisk = line.replace(/^\s*\*\s*/, '');
                             return (
-                              <span key={lIdx} className="block pl-3 relative mt-1 text-slate-700">
+                              <span key={lIdx} className="block pl-3 relative mt-1 text-slate-700 dark:text-slate-300">
                                 <span className="absolute left-0 top-[6px] w-1.5 h-1.5 bg-blue-700 rounded-full"></span>
                                 {renderTextWithBold(withoutAsterisk)}
                               </span>
@@ -287,7 +291,6 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
                       {item.timestamp}
                     </p>
                   </div>
-
                 </div>
               );
             })}
@@ -295,11 +298,11 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
             {/* Simulated API calling/reasoning steps feedback */}
             {isLoading && (
               <div className="flex gap-3 max-w-[80%]">
-                <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-800 border border-blue-100 flex items-center justify-center shrink-0 animate-spin">
+                <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center shrink-0 animate-spin">
                   <RefreshCw className="w-4 h-4" />
                 </div>
                 <div className="space-y-2">
-                  <div className="bg-slate-100/85 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-500 italic flex items-center gap-2">
+                  <div className="bg-slate-100/85 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-xs text-slate-500 dark:text-slate-400 italic flex items-center gap-2">
                     <div className="flex gap-1">
                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-0"></span>
                       <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce delay-150"></span>
@@ -315,7 +318,7 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
           </div>
 
           {/* Quick interactive shortcuts proposal panel chips */}
-          <div className="p-3 bg-white border-t border-slate-100 shrink-0">
+          <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
             <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2 select-none">
               Questions suggérées ou prêtes à l'analyse :
             </p>
@@ -325,7 +328,7 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
                   key={idx}
                   onClick={() => handleSendMessage(s.query)}
                   disabled={isLoading}
-                  className="bg-slate-100 hover:bg-blue-50 hover:text-blue-800 disabled:opacity-50 border border-slate-200 hover:border-blue-150 p-2 text-[11px] font-bold text-slate-650 rounded-lg transition-all text-left flex items-center justify-between gap-1.5 group select-none cursor-pointer"
+                  className="bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-900/50 p-2 text-[11px] font-bold text-slate-600 dark:text-slate-300 rounded-lg transition-all text-left flex items-center justify-between gap-1.5 group select-none cursor-pointer"
                 >
                   <span className="truncate max-w-[220px] md:max-w-none">{s.label}</span>
                   <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-blue-800 shrink-0" />
@@ -340,7 +343,7 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
               e.preventDefault();
               handleSendMessage(inputVal);
             }}
-            className="p-3 border-t border-slate-200 bg-white flex items-center gap-3 shrink-0"
+            className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-3 shrink-0"
           >
             <input
               type="text"
@@ -349,7 +352,7 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               placeholder="Posez une question sur l'état de l'inventaire clinique..."
-              className="flex-grow p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-800 focus:bg-white focus:border-blue-800 outline-none transition-all"
+              className="flex-grow p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-800 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-800 transition-all"
             />
             <button
               type="submit"
@@ -365,73 +368,198 @@ En attendant, voici une simulation de secours basée sur vos données : s'il s'a
         {/* Sidebar IA State indicators sidecard */}
         <div className="space-y-4">
           
-          {/* Card 1: Live Status indicators parsed */}
-          <section className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm font-sans space-y-4 select-none">
+          {/* Card 1: Live Status indicators */}
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm font-sans space-y-4 select-none transition-colors">
             
-            <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-              <Bot className="w-4.5 h-4.5 text-blue-800" />
-              <h3 className="text-xs font-black uppercase text-slate-700 tracking-wider">
+            {/* Header */}
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <Bot className="w-5 h-5 text-blue-800 dark:text-blue-300" />
+
+              <h3 className="text-xs font-black uppercase text-slate-700 dark:text-slate-200 tracking-wider">
                 Indicateurs Clés du Stock
               </h3>
             </div>
 
-            <div className="space-y-3 text-xs">
-              
-              {/* Critical products alert count */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Seuils franchis :</span>
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
-                  criticallyLowProducts.length > 0 
-                    ? 'bg-rose-50 text-rose-700 border border-rose-100' 
-                    : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                }`}>
-                  {criticallyLowProducts.length} produit{criticallyLowProducts.length > 1 ? 's' : ''}
-                </span>
+            {/* Indicators */}
+            <div className="grid grid-cols-1 gap-2.5">
+
+              {/* Seuils franchis */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 p-3">
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Seuils franchis
+                  </p>
+
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5">
+                    Produits sous le stock minimum
+                  </p>
+                </div>
+
+                <div
+                  className={`shrink-0 min-w-10 h-10 px-2 rounded-xl flex items-center justify-center text-sm font-black border ${
+                    criticallyLowProducts.length > 0
+                      ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-900/50'
+                      : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50'
+                  }`}
+                >
+                  {criticallyLowProducts.length}
+                </div>
+
               </div>
 
-              {/* Expiring count */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Péremption proche :</span>
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
-                  expiredOrSoon.length > 0
-                    ? 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse'
-                    : 'bg-slate-50 text-slate-600 border border-slate-150'
-                }`}>
-                  {expiredOrSoon.length} fiches
-                </span>
+              {/* Péremptions */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 p-3">
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Péremptions proches
+                  </p>
+
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5">
+                    Produits nécessitant une surveillance
+                  </p>
+                </div>
+
+                <div
+                  className={`shrink-0 min-w-10 h-10 px-2 rounded-xl flex items-center justify-center text-sm font-black border ${
+                    expiredOrSoon.length > 0
+                      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900/50'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  {expiredOrSoon.length}
+                </div>
+
               </div>
 
-              {/* Total monitored lines */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Lignes de consommables :</span>
-                <span className="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
-                  {products.length} références
-                </span>
+              {/* Références surveillées */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 p-3">
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Références suivies
+                  </p>
+
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5">
+                    Produits analysés par le système
+                  </p>
+                </div>
+
+                <div className="shrink-0 min-w-10 h-10 px-2 rounded-xl flex items-center justify-center text-sm font-black bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
+                  {products.length}
+                </div>
+
               </div>
 
             </div>
 
-            <div className="bg-blue-50/70 rounded-xl p-3 border border-blue-100 flex gap-2.5 items-start text-[11px] text-blue-900 leading-normal">
-              <ShieldCheck className="w-4.5 h-4.5 shrink-0 text-blue-800" />
-              <p>Chaque mouvement enregistré modifie dynamiquement les analyses et les réponses logistiques fournies par l'IA.</p>
+            {/* Information IA */}
+            <div className="bg-blue-50/70 dark:bg-blue-950/30 rounded-xl p-3 border border-blue-100 dark:border-blue-900/50 flex gap-2.5 items-start text-[11px] text-blue-900 dark:text-blue-300 leading-normal">
+              <ShieldCheck className="w-5 h-5 shrink-0 text-blue-800 dark:text-blue-300" />
+
+              <p>
+                Chaque mouvement enregistré modifie dynamiquement les analyses
+                et les réponses logistiques fournies par l'IA.
+              </p>
             </div>
 
-          </section>
-
-          {/* Card 2: Explicative prompt hints */}
-          <section className="bg-slate-100/50 rounded-2xl p-4 border border-slate-200/80 text-xs text-slate-500">
-            <h4 className="font-extrabold text-slate-700 flex items-center gap-1 mb-1.5 uppercase tracking-wide text-[10px]">
-              <HelpCircle className="w-3.5 h-3.5 text-slate-450" />
-              Pourquoi ce Chat IA ?
-            </h4>
-            <p className="leading-relaxed">
-              Il permet d'obtenir un audit logistique instantané en langage naturel sans devoir parcourir manuellement de longues tables d'inventaire hospitalières ou de rapports d'activité.
-            </p>
           </section>
 
         </div>
 
       </div>
+
+        {/* Why this AI assistant banner */}
+        <section className="bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 transition-colors">
+
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+
+            <div className="flex items-center gap-2 shrink-0">
+
+              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex items-center justify-center">
+                <HelpCircle className="w-4 h-4 text-blue-700 dark:text-blue-300" />
+              </div>
+
+              <h4 className="font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wide text-xs">
+                Pourquoi ce Chat IA ?
+              </h4>
+
+            </div>
+
+            <div className="hidden md:block w-px h-8 bg-slate-200 dark:bg-slate-700"></div>
+
+            <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Il permet d'obtenir un audit logistique instantané en langage naturel,
+              sans devoir parcourir manuellement de longues tables d'inventaire
+              hospitalières ou de rapports d'activité.
+            </p>
+
+          </div>
+
+        </section>
+
+      {/* Reset Conversation Modal */}
+      {resetModalOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 backdrop-blur-md p-4">
+
+          <div className="w-full max-w-md rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+
+            <div className="flex items-start gap-4">
+
+              {/* Icon */}
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950/40">
+                <RotateCcw className="h-5 w-5 text-indigo-700 dark:text-indigo-400" />
+              </div>
+
+              <div className="flex-1">
+
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                  Réinitialiser la conversation ?
+                </h3>
+
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                  Tout l'historique actuel de votre conversation avec Stock
+                  Assistant IA sera effacé.
+                </p>
+
+                <div className="mt-3 rounded-lg border border-indigo-100 dark:border-indigo-800/60 bg-indigo-50 dark:bg-indigo-950/40 p-3">
+
+                  <p className="text-xs font-medium leading-relaxed text-indigo-800 dark:text-indigo-300">
+                    Une nouvelle conversation sera automatiquement démarrée
+                    avec le message d'accueil de l'assistant.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="mt-6 flex gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+
+              <button
+                type="button"
+                onClick={() => setResetModalOpen(false)}
+                className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmClearChat}
+                className="flex-1 rounded-lg bg-indigo-700 hover:bg-indigo-600 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-all active:scale-[0.98]"
+              >
+                Réinitialiser
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );
@@ -445,9 +573,28 @@ function renderTextWithBold(text: string) {
   const parts = text.split('**');
   return parts.map((part, index) => {
     // Every odd index in parts represents text enclosed within **
-    if (index % 2 === 1) {
-      return <strong key={index} className="font-black text-slate-900">{part}</strong>;
-    }
+      function renderTextWithBold(text: string) {
+        if (!text.includes('**')) {
+          return text;
+        }
+
+        const parts = text.split('**');
+
+        return parts.map((part, index) => {
+          if (index % 2 === 1) {
+            return (
+              <strong
+                key={index}
+                className="font-black text-slate-900 dark:text-slate-100"
+              >
+                {part}
+              </strong>
+            );
+          }
+
+          return part;
+        });
+      }
     return part;
   });
 }
