@@ -4,9 +4,22 @@ import { UserAccount, UserRole } from '../types';
 
 interface UsersManagementViewProps {
   users: UserAccount[];
-  onAddUser: (name: string, email: string, role: UserRole) => void;
-  onUpdateUserRole: (id: string, role: UserRole) => void;
-  onDeleteUser: (id: string) => void;
+
+  onAddUser: (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole
+  ) => Promise<boolean>;
+
+  onUpdateUserRole: (
+    id: string,
+    role: UserRole
+  ) => Promise<boolean>;
+  
+  onDeleteUser: (
+    id: string
+  ) => Promise<boolean>;
 }
 
 export default function UsersManagementView({
@@ -18,18 +31,38 @@ export default function UsersManagementView({
   const [isAdding, setIsAdding] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  
   const [newUserRole, setNewUserRole] = useState<UserRole>('magasinier');
   
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('magasinier');
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUserName || !newUserEmail) return;
-    onAddUser(newUserName, newUserEmail, newUserRole);
-    setNewUserName('');
-    setNewUserEmail('');
-    setIsAdding(false);
+
+    if (
+      !newUserName ||
+      !newUserEmail ||
+      !newUserPassword
+    ) {
+      return;
+    }
+
+    const success = await onAddUser(
+      newUserName,
+      newUserEmail,
+      newUserPassword,
+      newUserRole
+    );
+
+    if (success) {
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserRole('magasinier');
+      setIsAdding(false);
+    }
   };
 
   const startEdit = (user: UserAccount) => {
@@ -37,15 +70,33 @@ export default function UsersManagementView({
     setEditRole(user.role);
   };
 
-  const saveEdit = (id: string) => {
-    onUpdateUserRole(id, editRole);
-    setEditingUserId(null);
+  const saveEdit = async (id: string) => {
+    const success = await onUpdateUserRole(
+      id,
+      editRole
+    );
+
+    if (success) {
+      setEditingUserId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const confirmed = window.confirm(
+      "Voulez-vous vraiment supprimer cet utilisateur ?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await onDeleteUser(id);
   };
 
   // Icon mapping for roles
   const getRoleIconAndColor = (role: UserRole) => {
     switch (role) {
-      case 'administrateur':
+      case 'admin':
         return {
           icon: <Shield className="w-4 h-4" />,
           label: 'Admin',
@@ -63,7 +114,7 @@ export default function UsersManagementView({
           label: 'Magasinier',
           badgeClass: 'bg-blue-50 text-blue-700 border-blue-100',
         };
-      case 'responsable':
+      case 'directeur':
         return {
           icon: <FileSpreadsheet className="w-4 h-4" />,
           label: 'Directeur Log.',
@@ -96,7 +147,7 @@ export default function UsersManagementView({
           <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">
             Nouveau compte collaborateur
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Name input */}
             <div className="space-y-1.5">
@@ -124,6 +175,24 @@ export default function UsersManagementView({
               />
             </div>
 
+            {/* Password input */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 uppercase">
+              Mot de passe
+            </label>
+
+            <input
+              type="password"
+              required
+              value={newUserPassword}
+              onChange={(e) =>
+                setNewUserPassword(e.target.value)
+              }
+              placeholder="ex: User000."
+              className="w-full border border-slate-200 p-2 rounded-lg text-sm text-slate-800 focus:ring-1 focus:ring-blue-800 outline-none"
+            />
+          </div>
+
             {/* Role select */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-500 uppercase">Rôle / Droits</label>
@@ -134,8 +203,8 @@ export default function UsersManagementView({
               >
                 <option value="pharmacien">Pharmacien (Régulateur stock)</option>
                 <option value="magasinier">Magasinier (Physique & Mouvements)</option>
-                <option value="administrateur">Administrateur (Supervision totale)</option>
-                <option value="responsable">Directeur / Responsable (IA & Rapports)</option>
+                <option value="admin">Administrateur (Supervision totale)</option>
+                <option value="directeur">Directeur / Responsable (IA & Rapports)</option>
               </select>
             </div>
 
@@ -220,8 +289,8 @@ export default function UsersManagementView({
                         >
                           <option value="pharmacien">Pharmacien</option>
                           <option value="magasinier">Magasinier</option>
-                          <option value="administrateur">Administrateur</option>
-                          <option value="responsable">Directeur (IA)</option>
+                          <option value="admin">Administrateur</option>
+                          <option value="directeur">Directeur (IA)</option>
                         </select>
                       ) : (
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border leading-none ${roleDetails.badgeClass}`}>
@@ -267,7 +336,7 @@ export default function UsersManagementView({
                             {/* Guard to prevent deleting the default admin account easily */}
                             {item.email !== 'admin.stock@hopitalcentral.fr' && (
                               <button
-                                onClick={() => onDeleteUser(item.id)}
+                                onClick={() => handleDelete(item.id)}
                                 className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg border border-transparent hover:border-red-100 transition-colors"
                                 title="Supprimer"
                               >

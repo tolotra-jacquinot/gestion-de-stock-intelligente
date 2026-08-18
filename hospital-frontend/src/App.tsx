@@ -20,13 +20,6 @@ import QuickMovementModal from './components/QuickMovementModal';
 import UsersManagementView from './components/UsersManagementView';
 import AssistantIAView from './components/AssistantIAView';
 
-const defaultUsers: UserAccount[] = [
-  { id: 'usr-1', name: 'Directeur Admin', email: 'admin.stock@hopitalcentral.fr', role: 'administrateur', createdAt: '10 Mai 2026' },
-  { id: 'usr-2', name: 'Dr. Martin', email: 'martin.chef@hopitalcentral.fr', role: 'pharmacien', createdAt: '12 Mai 2026' },
-  { id: 'usr-3', name: 'M. Jean Moreau', email: 'j.moreau@hopitalcentral.fr', role: 'magasinier', createdAt: '14 Mai 2026' },
-  { id: 'usr-4', name: 'Dr. Sarah Ben', email: 'directeur@hopitalcentral.fr', role: 'responsable', createdAt: '18 Mai 2026' },
-];
-
 // Status computer helper
 function computeProductStatus(
   stock: number,
@@ -68,6 +61,14 @@ const mapApiProductToProduct = (apiProduct: any): Product => ({
     apiProduct.min_stock,
     apiProduct.expiration
   ),
+});
+
+const mapApiUserToUserAccount = (apiUser: any): UserAccount => ({
+  id: String(apiUser.id),
+  name: apiUser.username,
+  email: apiUser.email || "",
+  role: apiUser.role,
+  createdAt: new Date(apiUser.date_joined).toLocaleDateString("fr-FR"),
 });
 
 const mapApiMovementToMovement = (
@@ -208,6 +209,37 @@ useEffect(() => {
 
   const [users, setUsers] = useState<UserAccount[]>([]);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!currentUser || currentUser.role !== "admin") {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          "http://127.0.0.1:8000/api/auth/users/"
+        );
+
+        if (!response.ok) {
+          throw new Error(`Erreur API : ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setUsers(
+          data.map(mapApiUserToUserAccount)
+        );
+      } catch (error) {
+        console.error(
+          "Erreur lors du chargement des utilisateurs :",
+          error
+        );
+      }
+    };
+
+    fetchUsers();
+  }, [currentUser]);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({
@@ -219,64 +251,6 @@ useEffect(() => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [quickMoveType, setQuickMoveType] = useState<MovementType | null>(null);
 
-  // Sync to localStorage
-  useEffect(() => {
-    localStorage.setItem('hospital_inventory_users', JSON.stringify(users));
-  }, [users]);
-  
-  useEffect(() => {
-      fetchUsers();
-  }, []);
-
-
-  const fetchUsers = async () => {
-
-      try {
-
-          const token = localStorage.getItem("token");
-
-          const response = await axios.get(
-              "http://127.0.0.1:8000/api/users/",
-              {
-                  headers:{
-                      Authorization:`Bearer ${token}`
-                  }
-              }
-          );
-
-
-          const data = response.data.map((u:any)=>({
-
-              id:String(u.id),
-
-              name:u.username,
-
-              email:u.email,
-
-              role:u.role,
-
-              createdAt:u.createdAt
-
-          }));
-
-
-          console.log("Utilisateurs Django :", data);
-
-
-          setUsers(data);
-
-
-      } catch(error){
-
-          console.error(
-              "Erreur récupération utilisateurs",
-              error
-          );
-
-      }
-
-    };
-
   // Helper date
   const getFormattedDateShort = () => {
     const d = new Date();
@@ -284,23 +258,149 @@ useEffect(() => {
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   };
 
-  const handleAddUser = (name: string, email: string, role: UserRole) => {
-    const newUser: UserAccount = {
-      id: `usr-${Date.now()}`,
-      name,
-      email,
-      role,
-      createdAt: getFormattedDateShort()
-    };
-    setUsers(prev => [...prev, newUser]);
+  const handleAddUser = async (
+    name: string,
+    email: string,
+    password: string,
+    role: UserRole
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/auth/users/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: name,
+            email,
+            password,
+            role,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur création utilisateur :",
+          errorData
+        );
+
+        return false;
+      }
+
+      const createdUser = await response.json();
+
+      setUsers((prev) => [
+        ...prev,
+        mapApiUserToUserAccount(createdUser),
+      ]);
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Erreur lors de la création de l'utilisateur :",
+        error
+      );
+
+      return false;
+    }
   };
 
-  const handleUpdateUserRole = (id: string, role: UserRole) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+  const handleUpdateUserRole = async (
+    id: string,
+    role: UserRole
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/auth/users/${id}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            role,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur modification rôle utilisateur :",
+          errorData
+        );
+
+        return false;
+      }
+
+      const updatedUser = await response.json();
+
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === id
+            ? mapApiUserToUserAccount(updatedUser)
+            : user
+        )
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Erreur lors de la modification du rôle :",
+        error
+      );
+
+      return false;
+    }
   };
 
-  const handleDeleteUser = (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
+  const handleDeleteUser = async (
+    id: string
+  ): Promise<boolean> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/auth/users/${id}/`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        let errorData = null;
+
+        try {
+          errorData = await response.json();
+        } catch {
+          // DELETE 204 n'a pas de body
+        }
+
+        console.error(
+          "Erreur suppression utilisateur :",
+          errorData
+        );
+
+        return false;
+      }
+
+      setUsers((prev) =>
+        prev.filter((user) => user.id !== id)
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Erreur lors de la suppression de l'utilisateur :",
+        error
+      );
+
+      return false;
+    }
   };
 
   // Handle Login success
@@ -736,7 +836,7 @@ const handleSaveProduct = async (data: {
               />
             )}
 
-            {activeTab === 'users' && currentUser.role === 'administrateur' && (
+            {activeTab === 'users' && currentUser.role === 'admin' && (
               <UsersManagementView
                 users={users}
                 onAddUser={handleAddUser}
