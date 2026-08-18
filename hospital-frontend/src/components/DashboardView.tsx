@@ -5,21 +5,40 @@ import { Product, Movement, UserRole } from '../types';
 interface DashboardViewProps {
   products: Product[];
   movements: Movement[];
+
+  stats: {
+    total_products: number;
+    out_of_stock: number;
+    critical_stock: number;
+    expired: number;
+    expiring_soon: number;
+
+    recent_movements: {
+      id: number;
+      product: string;
+      movement_type: string;
+      quantity: number;
+      user: string;
+      created_at: string;
+    }[];
+  } | null;
+
   onSelectProduct: (productId: string) => void;
   role: UserRole;
   onNavigateToAssistant?: () => void;
 }
 
-export default function DashboardView({ products, movements, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
-  // Compute some brief stats dynamically
-  const outOfStockCount = products.filter(p => p.stock === 0).length;
-  const criticalCount = products.filter(p => p.status === 'CRITIQUE' || p.status === 'URGENT').length;
-  const nearExpiryCount = products.filter(p => p.status === 'PÉREMPTION' || p.expiration === 'PROCHE').length;
+export default function DashboardView({ products, movements, stats, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
 
-  // Static list if counts are too low, to populate UI matching user screens
-  const displayedOutOfStock = Math.max(outOfStockCount, 12);
-  const displayedExpiry = Math.max(nearExpiryCount, 45);
-  const displayedMovements = Math.max(movements.length, 128);
+  const displayedOutOfStock = stats?.out_of_stock ?? 0;
+
+  const displayedExpiry = stats?.expiring_soon ?? 0;
+
+  const displayedMovements =
+    stats?.recent_movements.length ?? 0;
+
+  const displayedCritical =
+    stats?.critical_stock ?? 0;
 
   const weeklyTrendData = [
     { day: 'LUN', height: '40%', value: 52 },
@@ -98,7 +117,7 @@ export default function DashboardView({ products, movements, onSelectProduct, ro
               Alertes Critiques
             </h2>
             <span className="bg-red-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-              6 PRIORITÉS
+              {displayedCritical + displayedOutOfStock} PRIORITÉS
             </span>
           </div>
           

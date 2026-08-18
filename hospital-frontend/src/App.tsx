@@ -90,8 +90,26 @@ const mapApiMovementToMovement = (
   };
 };
 
+interface DashboardStats {
+  total_products: number;
+  out_of_stock: number;
+  critical_stock: number;
+  expired: number;
+  expiring_soon: number;
+  recent_movements: {
+    id: number;
+    product: string;
+    movement_type: string;
+    quantity: number;
+    user: string;
+    created_at: string;
+  }[];
+}
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   
   // Load products and movements state from localStorage or use initial mock data
   const [products, setProducts] = useState<Product[]>([]);
@@ -157,7 +175,36 @@ export default function App() {
   fetchMovements();
 }, [currentUser, products]);
 
-  const [movements, setMovements] = useState<Movement[]>([]);
+const [movements, setMovements] = useState<Movement[]>([]);
+
+useEffect(() => {
+  const fetchDashboardStats = async () => {
+    if (!currentUser) {
+      return;
+    }
+
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/dashboard/stats/"
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erreur API : ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      setDashboardStats(data);
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des statistiques du dashboard :",
+        error
+      );
+    }
+  };
+
+  fetchDashboardStats();
+}, [currentUser, products, movements]);
 
   const [users, setUsers] = useState<UserAccount[]>([]);
 
@@ -647,6 +694,7 @@ const handleSaveProduct = async (data: {
               <DashboardView 
                 products={products} 
                 movements={movements} 
+                stats={dashboardStats}
                 onSelectProduct={handleSelectProduct} 
                 role={currentUser.role}
                 onNavigateToAssistant={() => setActiveTab('assistant')}
