@@ -207,6 +207,37 @@ useEffect(() => {
   fetchDashboardStats();
 }, [currentUser, products, movements]);
 
+  const [stockAlerts, setStockAlerts] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchStockAlerts = async () => {
+      if (!currentUser) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          "http://127.0.0.1:8000/api/alerts/"
+        );
+
+        if (!response.ok) {
+          throw new Error(`Erreur API : ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setStockAlerts(data);
+      } catch (error) {
+        console.error(
+          "Erreur lors du chargement des alertes de stock :",
+          error
+        );
+      }
+    };
+
+    fetchStockAlerts();
+  }, [currentUser, products, movements]);
+
   const [users, setUsers] = useState<UserAccount[]>([]);
 
   useEffect(() => {
@@ -795,6 +826,7 @@ const handleSaveProduct = async (data: {
                 products={products} 
                 movements={movements} 
                 stats={dashboardStats}
+                alerts={stockAlerts}
                 onSelectProduct={handleSelectProduct} 
                 role={currentUser.role}
                 onNavigateToAssistant={() => setActiveTab('assistant')}

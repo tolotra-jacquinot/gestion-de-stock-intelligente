@@ -2,6 +2,19 @@ import React from 'react';
 import { AlertOctagon, CalendarRange, ArrowLeftRight, AlertTriangle, Sparkles, TrendingUp, Lock } from 'lucide-react';
 import { Product, Movement, UserRole } from '../types';
 
+interface AlertProduct {
+  id: number;
+  name: string;
+  code: string;
+  category: string;
+  stock: number;
+  min_stock: number;
+  max_stock: number;
+  expiration: string;
+  location: string;
+  packaging: string;
+}
+
 interface DashboardViewProps {
   products: Product[];
   movements: Movement[];
@@ -19,16 +32,22 @@ interface DashboardViewProps {
       movement_type: string;
       quantity: number;
       user: string;
-      created_at: string;
-    }[];
-  } | null;
+      created_at: string;}[];
+    } | null;
+
+    alerts: {
+      out_of_stock: AlertProduct[];
+      critical_stock: AlertProduct[];
+      expired: AlertProduct[];
+      expiring_soon: AlertProduct[];
+    } | null;
 
   onSelectProduct: (productId: string) => void;
   role: UserRole;
   onNavigateToAssistant?: () => void;
 }
 
-export default function DashboardView({ products, movements, stats, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
+export default function DashboardView({ products, movements, stats, alerts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
 
   const displayedOutOfStock = stats?.out_of_stock ?? 0;
 
@@ -48,6 +67,23 @@ export default function DashboardView({ products, movements, stats, onSelectProd
     { day: 'VEN', height: '90%', value: 117 },
     { day: 'SAM', height: '75%', value: 98 },
     { day: 'DIM', height: '100%', value: 130 },
+  ];
+
+  const criticalAlerts = [
+    ...(alerts?.out_of_stock || []).map((product) => ({
+      ...product,
+      alertType: "RUPTURE",
+    })),
+
+    ...(alerts?.critical_stock || []).map((product) => ({
+      ...product,
+      alertType: "CRITIQUE",
+    })),
+
+    ...(alerts?.expired || []).map((product) => ({
+      ...product,
+      alertType: "PÉRIMÉ",
+    })),
   ];
 
   return (
@@ -117,54 +153,51 @@ export default function DashboardView({ products, movements, stats, onSelectProd
               Alertes Critiques
             </h2>
             <span className="bg-red-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-              {displayedCritical + displayedOutOfStock} PRIORITÉS
+              {criticalAlerts.length} PRIORITÉS
             </span>
           </div>
           
           <div className="divide-y divide-slate-100 flex-grow">
-            
-            {/* Alert 1 */}
-            <div 
-              onClick={() => onSelectProduct('prod-insu')}
-              className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <div>
-                <p className="text-sm font-bold text-slate-800">Insuline Glargine 100U</p>
-                <p className="text-xs text-slate-500 mt-0.5 font-medium">Réserve centrale: 0 unités disponible</p>
-              </div>
-              <span className="bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                RUPTURE
-              </span>
-            </div>
+            {criticalAlerts.length > 0 ? (
+              criticalAlerts.slice(0, 5).map((product) => (
+                <div
+                  key={`${product.alertType}-${product.id}`}
+                  onClick={() => onSelectProduct(String(product.id))}
+                  className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">
+                      {product.name}
+                    </p>
 
-            {/* Alert 2 */}
-            <div 
-              onClick={() => onSelectProduct('prod-amox')}
-              className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <div>
-                <p className="text-sm font-bold text-slate-800">Amoxicilline 500mg</p>
-                <p className="text-xs text-slate-500 mt-0.5 font-medium">Seuil critique atteint (limite {products.find(p => p.id === 'prod-amox')?.minStock || 50}u)</p>
-              </div>
-              <span className="bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                RUPTURE
-              </span>
-            </div>
+                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                      {product.alertType === "RUPTURE" &&
+                        `Stock disponible : ${product.stock} unité(s)`}
 
-            {/* Alert 3 */}
-            <div 
-              onClick={() => onSelectProduct('prod-gants-nit')}
-              className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <div>
-                <p className="text-sm font-bold text-slate-800">Gants Nitrile (L)</p>
-                <p className="text-xs text-slate-500 mt-0.5 font-medium">Délai réappro dépassement estimé</p>
-              </div>
-              <span className="bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                URGENT
-              </span>
-            </div>
+                      {product.alertType === "CRITIQUE" &&
+                        `Stock actuel : ${product.stock} / seuil min : ${product.min_stock}`}
 
+                      {product.alertType === "PÉRIMÉ" &&
+                        `Date d'expiration : ${product.expiration}`}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
+                      product.alertType === "PÉRIMÉ"
+                        ? "bg-amber-600"
+                        : "bg-red-600"
+                    }`}
+                  >
+                    {product.alertType}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-sm text-slate-400">
+                Aucune alerte critique
+              </div>
+            )}
           </div>
         </div>
 
