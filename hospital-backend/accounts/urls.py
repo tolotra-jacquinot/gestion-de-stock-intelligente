@@ -6,6 +6,7 @@ from .views import (
     reset_password,
     users_list_create,
     user_detail,
+    TestAuthView,
 )
 
 urlpatterns = [
@@ -37,5 +38,10 @@ urlpatterns = [
         "users/<int:user_id>/",
         user_detail,
         name="user_detail",
+    ),
+
+    path(
+        "test-auth/",
+        TestAuthView.as_view()
     ),
 ]
