@@ -74,6 +74,7 @@ class RestockOrderSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "requested_by",
+            "status",
             "created_at",
             "updated_at",
             "received_at",
