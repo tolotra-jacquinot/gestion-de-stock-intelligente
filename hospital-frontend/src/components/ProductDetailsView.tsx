@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { ArrowLeft, MapPin, Sparkles, TrendingUp, User, Clock, AlertTriangle, Check, Archive } from 'lucide-react';
 import { Product, Movement, UserRole } from '../types';
+import { apiFetch } from "../api";
 
 interface ProductDetailsViewProps {
   product: Product;
   productMovements: Movement[];
   onBack: () => void;
-  onApproveOrder: (productId: string, quantity: number) => void;
   onRegisterMove: (productId: string, quantity: number, type: 'Entrée' | 'Sortie', destination: string) => void;
   role: UserRole;
   onUpdateProduct: (productId: string,data: {
@@ -29,7 +29,6 @@ export default function ProductDetailsView({
   product, 
   productMovements, 
   onBack, 
-  onApproveOrder, 
   onRegisterMove,
   onUpdateProduct,
   onArchiveProduct,
@@ -87,7 +86,7 @@ export default function ProductDetailsView({
     setRestockModalOpen(true);
   };
 
-  const handleRestockSubmit = (e: React.FormEvent) => {
+  const handleRestockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const quantity = parseInt(restockQty, 10);
@@ -96,16 +95,51 @@ export default function ProductDetailsView({
       return;
     }
 
-    // Temporaire :
-    // on ne modifie PAS encore le stock.
-    // Le futur backend créera ici une vraie demande de réapprovisionnement.
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/restock-orders/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            product: Number(product.id),
+            quantity,
+            supplier: restockSupplier,
+          }),
+        }
+      );
 
-    setIsOrdered(true);
-    setRestockModalOpen(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(
+          "Erreur création réapprovisionnement :",
+          errorData
+        );
+        return;
+      }
 
-    setTimeout(() => {
-      setIsOrdered(false);
-    }, 2000);
+      const order = await response.json();
+
+      console.log(
+        "Demande de réapprovisionnement créée :",
+        order
+      );
+
+      setIsOrdered(true);
+      setRestockModalOpen(false);
+
+      setTimeout(() => {
+        setIsOrdered(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error(
+        "Impossible de créer la demande de réapprovisionnement :",
+        error
+      );
+    }
   };
 
   const handleModalSubmit = (e: React.FormEvent) => {

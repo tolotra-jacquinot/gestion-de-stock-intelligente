@@ -550,39 +550,6 @@ useEffect(() => {
     return `${day} ${month}, ${hours}:${minutes}`;
   };
 
-  // Action: Approve Order recommendation
-  const handleApproveOrder = (productId: string, quantity: number) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id === productId) {
-        const newStock = p.stock + quantity;
-        const newStatus = computeProductStatus(newStock, p.minStock, p.expiration);
-        return {
-          ...p,
-          stock: newStock,
-          status: newStatus
-        };
-      }
-      return p;
-    }));
-
-    const prod = products.find(p => p.id === productId);
-    if (prod) {
-      const isEmergency = prod.status === 'CRITIQUE' || prod.status === 'RUPTURE';
-      const newMove: Movement = {
-        id: `mov-${Date.now()}`,
-        productId: productId,
-        productName: prod.name,
-        type: 'Entrée',
-        quantity: quantity,
-        user: 'Dr. Martin',
-        destination: 'Fournisseur MedLab',
-        timestamp: getFormattedDateTime(),
-        isEmergency
-      };
-      setMovements(prev => [newMove, ...prev]);
-    }
-  };
-
   // Action: Register movement (Entrée or Sortie)
 // Action: Register movement through Django API
 const handleRegisterMove = async (
@@ -1204,7 +1171,6 @@ const handleSaveProduct = async (data: {
                 product={selectedProduct} 
                 productMovements={selectedProductMovements}
                 onBack={() => setActiveTab('stock')}
-                onApproveOrder={handleApproveOrder}
                 onRegisterMove={handleRegisterMove}
                 onUpdateProduct={handleUpdateProduct}
                 onArchiveProduct={handleArchiveProduct}
