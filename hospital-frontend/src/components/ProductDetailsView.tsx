@@ -40,6 +40,10 @@ export default function ProductDetailsView({
   const [modalDest, setModalDest] = useState('Urgences');
   const [isOrdered, setIsOrdered] = useState(false);
 
+  const [restockModalOpen, setRestockModalOpen] = useState(false);
+  const [restockQty, setRestockQty] = useState("50");
+  const [restockSupplier, setRestockSupplier] = useState("Fournisseur MedLab");
+
   const [isEditing, setIsEditing] = useState(false);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -74,8 +78,31 @@ export default function ProductDetailsView({
   const strokeDashoffset = circumference - (stockPercentage / 100) * circumference;
 
   const handleOrderApproval = () => {
+    const recommendedQty = Math.max(
+      product.maxStock - product.stock,
+      1
+    );
+
+    setRestockQty(String(recommendedQty));
+    setRestockModalOpen(true);
+  };
+
+  const handleRestockSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const quantity = parseInt(restockQty, 10);
+
+    if (isNaN(quantity) || quantity <= 0) {
+      return;
+    }
+
+    // Temporaire :
+    // on ne modifie PAS encore le stock.
+    // Le futur backend créera ici une vraie demande de réapprovisionnement.
+
     setIsOrdered(true);
-    onApproveOrder(product.id, 50);
+    setRestockModalOpen(false);
+
     setTimeout(() => {
       setIsOrdered(false);
     }, 2000);
@@ -499,29 +526,36 @@ export default function ProductDetailsView({
                   <span className="text-[10px] font-black uppercase tracking-wider">Recommandation</span>
                 </div>
                 <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
-                  Commander <span className="font-bold text-blue-900 dark:text-blue-300">50 unités</span> d'ici mardi pour écarter tout risque de rupture sous 12 jours.
+                  Commander <span className="font-bold text-blue-900 dark:text-blue-300">{Math.max(product.maxStock - product.stock, 1)} unités</span> d'ici mardi pour écarter tout risque de rupture sous 12 jours.
                 </p>
               </div>
 
+              <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
+                Quantité recommandée :{" "}
+                <span className="font-bold text-blue-800 dark:text-blue-300">
+                  {Math.max(product.maxStock - product.stock, 1)} unités
+                </span>
+              </p>
+
               {role === 'admin' || role === 'magasinier' ? (
-                <button 
-                  onClick={handleOrderApproval}
-                  disabled={isOrdered}
-                  className={`w-full h-11 rounded-lg text-xs tracking-wider uppercase font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] ${
-                    isOrdered 
-                      ? 'bg-emerald-600 text-white' 
-                      : 'bg-blue-800 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  {isOrdered ? (
-                    <>
-                      <Check className="w-4 h-4 stroke-[3]" />
-                      <span>Commande Approuvée</span>
-                    </>
-                  ) : (
-                    'Approuver la Commande'
-                  )}
-                </button>
+              <button 
+                onClick={handleOrderApproval}
+                disabled={isOrdered}
+                className={`w-full h-11 rounded-lg text-xs tracking-wider uppercase font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] ${
+                  isOrdered 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-blue-800 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {isOrdered ? (
+                  <>
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>Demande créée</span>
+                  </>
+                ) : (
+                  'Réapprovisionner'
+                )}
+              </button>
               ) : (
                 <div className="w-full text-center py-2.5 px-3 bg-slate-50 border border-slate-205 text-[11px] text-slate-500 font-bold rounded-lg leading-normal">
                   Approbation réservée aux pharmaciens et administrateurs
@@ -604,6 +638,129 @@ export default function ProductDetailsView({
         </div>
 
       </section>
+
+      {/* Restock Modal */}
+      {restockModalOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 backdrop-blur-sm p-4">
+
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+
+            <div className="flex items-start gap-4">
+
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
+                <TrendingUp className="h-5 w-5 text-blue-800 dark:text-blue-300" />
+              </div>
+
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                  Réapprovisionner le produit
+                </h3>
+
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Créer une demande de réapprovisionnement pour
+                  <span className="font-bold text-slate-700 dark:text-slate-200">
+                    {" "}{product.name}
+                  </span>.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Stock actuel
+                </p>
+                <p className="mt-1 text-lg font-black text-slate-800 dark:text-slate-100">
+                  {product.stock}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3">
+                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  Stock minimum
+                </p>
+                <p className="mt-1 text-lg font-black text-slate-800 dark:text-slate-100">
+                  {product.minStock}
+                </p>
+              </div>
+
+            </div>
+
+            <form onSubmit={handleRestockSubmit} className="mt-5 space-y-4">
+
+              <div>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                  Quantité à commander
+                </label>
+
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={restockQty}
+                  onChange={(e) => setRestockQty(e.target.value)}
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                  Fournisseur
+                </label>
+
+                <select
+                  value={restockSupplier}
+                  onChange={(e) => setRestockSupplier(e.target.value)}
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700"
+                >
+                  <option value="Fournisseur MedLab">
+                    Fournisseur MedLab
+                  </option>
+
+                  <option value="Logistique Centrale">
+                    Logistique Centrale
+                  </option>
+
+                  <option value="Laboratoire BioPharma">
+                    Laboratoire BioPharma
+                  </option>
+                </select>
+              </div>
+
+              <div className="rounded-lg border border-blue-100 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-950/30 p-3">
+                <p className="text-xs leading-relaxed text-blue-800 dark:text-blue-300">
+                  Cette action crée uniquement une demande de réapprovisionnement.
+                  Le stock sera mis à jour lors de la réception réelle.
+                </p>
+              </div>
+
+              <div className="flex gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+
+                <button
+                  type="button"
+                  onClick={() => setRestockModalOpen(false)}
+                  className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                >
+                  Annuler
+                </button>
+
+                <button
+                  type="submit"
+                  className="flex-1 rounded-lg bg-blue-800 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-blue-700"
+                >
+                  Créer la demande
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+      )}
 
       {/* Archive Product Modal */}
       {archiveModalOpen && (
