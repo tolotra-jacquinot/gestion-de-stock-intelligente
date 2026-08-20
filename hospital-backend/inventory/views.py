@@ -74,7 +74,11 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     @transaction.atomic
     def receive(self, request, pk=None):
-        restock_order = self.get_object()
+        restock_order = (
+            RestockOrder.objects
+            .select_for_update()
+            .get(pk=pk)
+        )
 
         if restock_order.status != "ORDERED":
             return Response(
