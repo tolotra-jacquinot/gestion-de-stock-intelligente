@@ -89,6 +89,17 @@ class RestockOrder(models.Model):
         blank=True,
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product"],
+                condition=models.Q(
+                    status__in=["PENDING", "ORDERED"]
+                ),
+                name="unique_active_restock_order_per_product",
+            )
+        ]
+
     def __str__(self):
         return (
             f"{self.product.name} - "
