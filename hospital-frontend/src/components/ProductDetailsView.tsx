@@ -8,6 +8,9 @@ interface ProductDetailsViewProps {
   productMovements: Movement[];
   onBack: () => void;
   onRegisterMove: (productId: string, quantity: number, type: 'Entrée' | 'Sortie', destination: string) => void;
+  
+  onRestockCreated: (order: any) => void;
+
   role: UserRole;
   onUpdateProduct: (productId: string,data: {
       name: string;
@@ -23,6 +26,8 @@ interface ProductDetailsViewProps {
 
   onArchiveProduct: (productId: string
   ) => Promise<boolean>;
+
+  activeRestockStatus: "PENDING" | "ORDERED" | null;
 }
 
 export default function ProductDetailsView({ 
@@ -32,6 +37,8 @@ export default function ProductDetailsView({
   onRegisterMove,
   onUpdateProduct,
   onArchiveProduct,
+  onRestockCreated,
+  activeRestockStatus,
   role
 }: ProductDetailsViewProps) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -68,6 +75,9 @@ export default function ProductDetailsView({
     product.location
   );
 
+  const [isCreatingRestock, setIsCreatingRestock] =
+  useState(false);
+
   // Compute stock percentage
   const stockPercentage = Math.min(Math.round((product.stock / product.maxStock) * 100), 100);
   
@@ -94,6 +104,12 @@ export default function ProductDetailsView({
     if (isNaN(quantity) || quantity <= 0) {
       return;
     }
+
+    if (isCreatingRestock) {
+      return;
+    }
+
+    setIsCreatingRestock(true);
 
     try {
       const response = await apiFetch(
@@ -127,6 +143,8 @@ export default function ProductDetailsView({
         order
       );
 
+      onRestockCreated(order);
+
       setIsOrdered(true);
       setRestockModalOpen(false);
 
@@ -139,6 +157,9 @@ export default function ProductDetailsView({
         "Impossible de créer la demande de réapprovisionnement :",
         error
       );
+    }
+    finally {
+      setIsCreatingRestock(false);
     }
   };
 
@@ -572,23 +593,27 @@ export default function ProductDetailsView({
               </p>
 
               {role === 'admin' || role === 'magasinier' ? (
-              <button 
+              <button
+                type="button"
                 onClick={handleOrderApproval}
-                disabled={isOrdered}
-                className={`w-full h-11 rounded-lg text-xs tracking-wider uppercase font-extrabold transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] ${
-                  isOrdered 
-                    ? 'bg-emerald-600 text-white' 
-                    : 'bg-blue-800 hover:bg-blue-700 text-white'
+                disabled={
+                  activeRestockStatus !== null ||
+                  product.stock >= product.maxStock
+                }
+                className={`w-full rounded-xl px-4 py-3 text-sm font-black transition-all ${
+                  activeRestockStatus !== null ||
+                  product.stock >= product.maxStock
+                    ? "cursor-not-allowed bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                    : "bg-blue-800 text-white hover:bg-blue-900"
                 }`}
               >
-                {isOrdered ? (
-                  <>
-                    <Check className="w-4 h-4 stroke-[3]" />
-                    <span>Demande créée</span>
-                  </>
-                ) : (
-                  'Réapprovisionner'
-                )}
+                {activeRestockStatus === "PENDING"
+                  ? "DEMANDE EN ATTENTE"
+                  : activeRestockStatus === "ORDERED"
+                  ? "COMMANDE EN COURS"
+                  : product.stock >= product.maxStock
+                  ? "STOCK SUFFISANT"
+                  : "RÉAPPROVISIONNER"}
               </button>
               ) : (
                 <div className="w-full text-center py-2.5 px-3 bg-slate-50 border border-slate-205 text-[11px] text-slate-500 font-bold rounded-lg leading-normal">
@@ -782,9 +807,12 @@ export default function ProductDetailsView({
 
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg bg-blue-800 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-blue-700"
+                  disabled={isCreatingRestock}
+                  className="flex-1 rounded-lg bg-blue-800 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed" 
                 >
-                  Créer la demande
+                  {isCreatingRestock
+                    ? "Création..."
+                    : "Créer la demande"}
                 </button>
 
               </div>

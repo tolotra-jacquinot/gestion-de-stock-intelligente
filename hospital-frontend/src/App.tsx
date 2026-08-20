@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
 
-import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole } from './types';
+import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole, RestockOrder} from './types';
 import { apiFetch } from "./api";
 
 import LoginView from './components/LoginView';
@@ -20,6 +20,7 @@ import QuickMovementModal from './components/QuickMovementModal';
 import UsersManagementView from './components/UsersManagementView';
 import AssistantIAView from './components/AssistantIAView';
 import Toast, { ToastType } from "./components/Toast";
+import RestockManagementView from './components/RestockManagementView';
 
 // Status computer helper
 function computeProductStatus(
@@ -91,6 +92,26 @@ const mapApiMovementToMovement = (
     timestamp: new Date(apiMovement.created_at).toLocaleString("fr-FR"),
   };
 };
+
+const mapApiRestockOrderToRestockOrder = (
+  apiOrder: any
+): RestockOrder => ({
+  id: String(apiOrder.id),
+  productId: String(apiOrder.product),
+  productName: apiOrder.product_name,
+  quantity: apiOrder.quantity,
+  supplier: apiOrder.supplier || "",
+  requestedBy: apiOrder.requested_by_name,
+  status: apiOrder.status,
+  createdAt: new Date(
+    apiOrder.created_at
+  ).toLocaleString("fr-FR"),
+  receivedAt: apiOrder.received_at
+    ? new Date(
+        apiOrder.received_at
+      ).toLocaleString("fr-FR")
+    : null,
+});
 
 interface DashboardStats {
   total_products: number;
@@ -291,6 +312,44 @@ useEffect(() => {
   }, [currentUser, products, movements]);
 
   const [users, setUsers] = useState<UserAccount[]>([]);
+
+  const [restockOrders, setRestockOrders] =
+  useState<RestockOrder[]>([]);
+
+  useEffect(() => {
+    const fetchRestockOrders = async () => {
+      if (!currentUser) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          "http://127.0.0.1:8000/api/restock-orders/"
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Erreur API : ${response.status}`
+          );
+        }
+
+        const data = await response.json();
+
+        setRestockOrders(
+          data.map(
+            mapApiRestockOrderToRestockOrder
+          )
+        );
+      } catch (error) {
+        console.error(
+          "Erreur chargement réapprovisionnements :",
+          error
+        );
+      }
+    };
+
+    fetchRestockOrders();
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -537,6 +596,25 @@ useEffect(() => {
   const handleLogout = () => {
     setCurrentUser(null);
     setActiveTab('dashboard');
+  };
+
+  const handleRestockCreated = (
+    apiOrder: any
+  ) => {
+    const newOrder =
+      mapApiRestockOrderToRestockOrder(
+        apiOrder
+      );
+
+    setRestockOrders((prev) => [
+      newOrder,
+      ...prev,
+    ]);
+
+    showToast(
+      "Demande de réapprovisionnement créée.",
+      "success"
+    );
   };
 
   // Helper helper to format current date/time
@@ -934,6 +1012,161 @@ const handleSaveProduct = async (data: {
     }
   };
 
+  const handleOrderRestock = async (
+    id: string
+  ): Promise<void> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/restock-orders/${id}/order/`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur validation commande :",
+          errorData
+        );
+
+        showToast(
+          "Impossible de valider la commande.",
+          "error"
+        );
+
+        return;
+      }
+
+      const updatedOrder =
+        await response.json();
+
+      setRestockOrders((prev) =>
+        prev.map((order) =>
+          order.id === id
+            ? mapApiRestockOrderToRestockOrder(
+                updatedOrder
+              )
+            : order
+        )
+      );
+
+      showToast(
+        "Commande validée avec succès.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "Erreur validation commande :",
+        error
+      );
+
+      showToast(
+        "Impossible de valider la commande.",
+        "error"
+      );
+    }
+  };
+
+  const handleReceiveRestock = async (
+    id: string
+  ): Promise<void> => {
+    try {
+      const response = await apiFetch(
+        `http://127.0.0.1:8000/api/restock-orders/${id}/receive/`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        console.error(
+          "Erreur réception commande :",
+          errorData
+        );
+
+        showToast(
+          "Impossible de réceptionner la commande.",
+          "error"
+        );
+
+        return;
+      }
+
+      const updatedOrder =
+        await response.json();
+
+      setRestockOrders((prev) =>
+        prev.map((order) =>
+          order.id === id
+            ? mapApiRestockOrderToRestockOrder(
+                updatedOrder
+              )
+            : order
+        )
+      );
+
+      // Recharger les produits,
+      // car la réception modifie réellement le stock.
+      const productsResponse =
+        await apiFetch(
+          "http://127.0.0.1:8000/api/products/"
+        );
+
+      if (productsResponse.ok) {
+        const productsData =
+          await productsResponse.json();
+
+        setProducts(
+          productsData.map(
+            mapApiProductToProduct
+          )
+        );
+      }
+
+      // Recharger également l'historique.
+      const movementsResponse =
+        await apiFetch(
+          "http://127.0.0.1:8000/api/movements/"
+        );
+
+      if (movementsResponse.ok) {
+        const movementsData =
+          await movementsResponse.json();
+
+        setMovements(
+          movementsData.map(
+            (movement: any) =>
+              mapApiMovementToMovement(
+                movement,
+                products
+              )
+          )
+        );
+      }
+
+      showToast(
+        "Commande réceptionnée et stock mis à jour.",
+        "success"
+      );
+
+    } catch (error) {
+      console.error(
+        "Erreur réception commande :",
+        error
+      );
+
+      showToast(
+        "Impossible de réceptionner la commande.",
+        "error"
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
       
@@ -1026,6 +1259,19 @@ const handleSaveProduct = async (data: {
           >
             <ArrowLeftRight className="w-5 h-5 stroke-[2]" />
             <span>Historique</span>
+          </button>
+
+          {/* Réapprovisionnements Tab */}
+          <button
+            onClick={() => setActiveTab('restocks')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'restocks'
+                ? 'bg-blue-800 text-white shadow-xs'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Package className="w-5 h-5 stroke-[2]" />
+            <span>Réapprovisionnements</span>
           </button>
 
           {/* Assistant IA Tab */}
@@ -1140,6 +1386,15 @@ const handleSaveProduct = async (data: {
               />
             )}
 
+            {activeTab === 'restocks' && (
+              <RestockManagementView
+                orders={restockOrders}
+                role={currentUser.role}
+                onOrder={handleOrderRestock}
+                onReceive={handleReceiveRestock}
+              />
+            )}
+
             {activeTab === 'assistant' && (
               <AssistantIAView 
                 products={products}
@@ -1167,13 +1422,24 @@ const handleSaveProduct = async (data: {
             )}
 
             {activeTab === 'product-details' && selectedProduct && (
-              <ProductDetailsView 
-                product={selectedProduct} 
+              <ProductDetailsView
+                product={selectedProduct}
                 productMovements={selectedProductMovements}
                 onBack={() => setActiveTab('stock')}
                 onRegisterMove={handleRegisterMove}
                 onUpdateProduct={handleUpdateProduct}
                 onArchiveProduct={handleArchiveProduct}
+                onRestockCreated={handleRestockCreated}
+                activeRestockStatus={
+                  restockOrders.find(
+                    (order) =>
+                      order.productId === selectedProduct.id &&
+                      (
+                        order.status === "PENDING" ||
+                        order.status === "ORDERED"
+                      )
+                  )?.status ?? null
+                }
                 role={currentUser.role}
               />
             )}
@@ -1223,6 +1489,20 @@ const handleSaveProduct = async (data: {
         >
           <ArrowLeftRight className="w-5 h-5 text-current stroke-[2]" />
           <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">Mouvements</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('restocks')}
+          className={`flex flex-col items-center justify-center w-16 transition-all ${
+            activeTab === 'restocks'
+              ? 'text-blue-800 font-extrabold scale-105'
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          <Package className="w-5 h-5 text-current stroke-[2]" />
+          <span className="text-[9px] font-bold mt-0.5 tracking-tight uppercase">
+            Réappro.
+          </span>
         </button>
 
         {/* Assistant Tab */}

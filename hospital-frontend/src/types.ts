@@ -61,4 +61,30 @@ export interface NotificationPrefs {
   expirationAlerts: boolean;
 }
 
-export type ActiveTab = 'dashboard' | 'stock' | 'movements' | 'profile' | 'product-details' | 'users' | 'assistant';
+export type RestockStatus =
+  | 'PENDING'
+  | 'ORDERED'
+  | 'RECEIVED'
+  | 'CANCELLED';
+
+export interface RestockOrder {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  supplier: string;
+  requestedBy: string;
+  status: RestockStatus;
+  createdAt: string;
+  receivedAt?: string | null;
+}
+
+export type ActiveTab =
+  | 'dashboard'
+  | 'stock'
+  | 'movements'
+  | 'restocks'
+  | 'profile'
+  | 'product-details'
+  | 'users'
+  | 'assistant';
