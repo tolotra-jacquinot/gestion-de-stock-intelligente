@@ -106,3 +106,56 @@ class RestockOrder(models.Model):
             f"{self.quantity} unités - "
             f"{self.status}"
         )
+
+class ProductBatch(models.Model):
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="batches",
+    )
+
+    batch_number = models.CharField(
+        max_length=100,
+    )
+
+    quantity = models.PositiveIntegerField(
+        default=0,
+    )
+
+    expiration_date = models.DateField()
+
+    received_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    supplier = models.CharField(
+        max_length=150,
+        blank=True,
+    )
+
+    active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "batch_number"],
+                name="unique_batch_number_per_product",
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.product.name} - "
+            f"{self.batch_number}"
+        )
