@@ -10,11 +10,12 @@ from .permissions import (
     RestockOrderPermission,
 )
 
-from .models import StockMovement, RestockOrder
+from .models import StockMovement, RestockOrder, ProductBatch
 
 from .serializers import (
     StockMovementSerializer,
     RestockOrderSerializer,
+    ProductBatchSerializer,
 )
 
 
@@ -28,6 +29,25 @@ class StockMovementViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+class ProductBatchViewSet(viewsets.ModelViewSet):
+    queryset = ProductBatch.objects.all().order_by(
+        "expiration_date",
+        "created_at",
+    )
+
+    serializer_class = ProductBatchSerializer
+
+    permission_classes = [
+        StockMovementPermission
+    ]
+
+    http_method_names = [
+        "get",
+        "post",
+        "patch",
+        "head",
+        "options",
+    ]
 
 class RestockOrderViewSet(viewsets.ModelViewSet):
     queryset = RestockOrder.objects.all().order_by("-created_at")

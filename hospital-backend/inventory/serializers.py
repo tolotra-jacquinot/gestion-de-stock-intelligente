@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import StockMovement, RestockOrder
+from .models import StockMovement, RestockOrder, ProductBatch
 
 
 class StockMovementSerializer(serializers.ModelSerializer):
@@ -130,6 +130,31 @@ class RestockOrderSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError(
                 "La quantité doit être supérieure à zéro."
+            )
+
+        return value
+
+class ProductBatchSerializer(serializers.ModelSerializer):
+
+    product_name = serializers.CharField(
+        source="product.name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ProductBatch
+        fields = "__all__"
+
+        read_only_fields = [
+            "received_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError(
+                "La quantité du lot doit être supérieure à zéro."
             )
 
         return value
