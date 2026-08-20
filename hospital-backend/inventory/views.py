@@ -1,3 +1,4 @@
+from products.models import Product
 from django.db import transaction
 from django.utils import timezone
 
@@ -111,14 +112,79 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        product = (
+            Product.objects
+            .select_for_update()
+            .get(pk=restock_order.product_id)
+        )
+
+        projected_stock = (
+            product.stock + restock_order.quantity
+        )
+
+        if projected_stock > product.max_stock:
+            return Response(
+                {
+                    "quantity": (
+                        "La réception ferait dépasser "
+                        "le stock maximum du produit. "
+                        f"Stock actuel : {product.stock}, "
+                        f"quantité à recevoir : "
+                        f"{restock_order.quantity}, "
+                        f"maximum : {product.max_stock}."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        batch_number = request.data.get("batch_number")
+        expiration_date = request.data.get("expiration_date")
+
+        if not batch_number:
+            return Response(
+                {
+                    "batch_number": (
+                        "Le numéro de lot est obligatoire."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not expiration_date:
+            return Response(
+                {
+                    "expiration_date": (
+                        "La date d'expiration du lot est obligatoire."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        batch_serializer = ProductBatchSerializer(
+            data={
+                "product": product.id,
+                "batch_number": batch_number,
+                "quantity": restock_order.quantity,
+                "expiration_date": expiration_date,
+                "supplier": restock_order.supplier,
+                "active": True,
+            }
+        )
+
+        batch_serializer.is_valid(
+            raise_exception=True
+        )
+
+        batch = batch_serializer.save()
         StockMovementSerializer().create(
             {
-                "product": restock_order.product,
+                "product": product,
                 "user": request.user,
                 "movement_type": "ENTRY",
                 "quantity": restock_order.quantity,
                 "reason": (
-                    f"Réception commande #{restock_order.id}"
+                    f"Réception commande #{restock_order.id} "
+                    f"- Lot {batch.batch_number}"
                 ),
             }
         )
@@ -135,5 +201,12 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
         )
 
         return Response(
-            RestockOrderSerializer(restock_order).data
+            {
+                "order": RestockOrderSerializer(
+                    restock_order
+                ).data,
+                "batch": ProductBatchSerializer(
+                    batch
+                ).data,
+            }
         )
