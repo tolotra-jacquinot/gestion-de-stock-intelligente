@@ -2,7 +2,13 @@ from django.utils import timezone
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import StockMovement, RestockOrder, ProductBatch
+from .models import (
+    StockMovement,
+    RestockOrder,
+    ProductBatch,
+    StockTransfer,
+    LocationStock,
+)
 
 def validate_batch_expiration(value):
     today = timezone.localdate()
@@ -337,3 +343,148 @@ class ProductBatchSerializer(serializers.ModelSerializer):
 
     def validate_expiration_date(self, value):
         return validate_batch_expiration(value)
+
+class StockTransferSerializer(serializers.ModelSerializer):
+
+    product_name = serializers.CharField(
+        source="product.name",
+        read_only=True,
+    )
+
+    source_name = serializers.CharField(
+        source="source.name",
+        read_only=True,
+    )
+
+    destination_name = serializers.CharField(
+        source="destination.name",
+        read_only=True,
+    )
+
+    transferred_by_name = serializers.CharField(
+        source="transferred_by.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = StockTransfer
+        fields = "__all__"
+
+        read_only_fields = [
+            "transferred_by",
+            "created_at",
+        ]
+
+    def validate(self, attrs):
+        source = attrs.get("source")
+        destination = attrs.get("destination")
+        quantity = attrs.get("quantity")
+        product = attrs.get("product")
+
+        if source == destination:
+            raise serializers.ValidationError(
+                {
+                    "destination": (
+                        "La source et la destination "
+                        "doivent être différentes."
+                    )
+                }
+            )
+
+        if quantity <= 0:
+            raise serializers.ValidationError(
+                {
+                    "quantity": (
+                        "La quantité doit être supérieure à zéro."
+                    )
+                }
+            )
+
+        source_stock = LocationStock.objects.filter(
+            product=product,
+            location=source,
+        ).first()
+
+        if not source_stock:
+            raise serializers.ValidationError(
+                {
+                    "source": (
+                        "Aucun stock n'existe pour ce produit "
+                        "dans l'emplacement source."
+                    )
+                }
+            )
+
+        if quantity > source_stock.quantity:
+            raise serializers.ValidationError(
+                {
+                    "quantity": (
+                        "Stock insuffisant dans "
+                        "l'emplacement source."
+                    )
+                }
+            )
+
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+
+        product = validated_data["product"]
+        source = validated_data["source"]
+        destination = validated_data["destination"]
+        quantity = validated_data["quantity"]
+
+        source_stock = (
+            LocationStock.objects
+            .select_for_update()
+            .get(
+                product=product,
+                location=source,
+            )
+        )
+
+        destination_stock, _ = (
+            LocationStock.objects
+            .select_for_update()
+            .get_or_create(
+                product=product,
+                location=destination,
+                defaults={
+                    "quantity": 0,
+                },
+            )
+        )
+
+        if source_stock.quantity < quantity:
+            raise serializers.ValidationError(
+                {
+                    "quantity": (
+                        "Stock insuffisant dans "
+                        "l'emplacement source."
+                    )
+                }
+            )
+
+        source_stock.quantity -= quantity
+        destination_stock.quantity += quantity
+
+        source_stock.save(
+            update_fields=[
+                "quantity",
+                "updated_at",
+            ]
+        )
+
+        destination_stock.save(
+            update_fields=[
+                "quantity",
+                "updated_at",
+            ]
+        )
+
+        transfer = StockTransfer.objects.create(
+            **validated_data
+        )
+
+        return transfer

@@ -76,6 +76,51 @@ class LocationStock(models.Model):
             f"{self.quantity}"
         )
 
+class StockTransfer(models.Model):
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="stock_transfers",
+    )
+
+    source = models.ForeignKey(
+        StockLocation,
+        on_delete=models.PROTECT,
+        related_name="outgoing_transfers",
+    )
+
+    destination = models.ForeignKey(
+        StockLocation,
+        on_delete=models.PROTECT,
+        related_name="incoming_transfers",
+    )
+
+    quantity = models.PositiveIntegerField()
+
+    transferred_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="stock_transfers",
+    )
+
+    reason = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    def __str__(self):
+        return (
+            f"{self.product.name} : "
+            f"{self.source.name} → "
+            f"{self.destination.name} "
+            f"({self.quantity})"
+        )
+
 class StockMovement(models.Model):
 
     MOVEMENT_TYPES = [
