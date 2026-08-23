@@ -8,6 +8,7 @@ from .models import (
     ProductBatch,
     StockTransfer,
     LocationStock,
+    StockLocation,
 )
 
 def validate_batch_expiration(value):
@@ -143,12 +144,18 @@ class StockMovementSerializer(serializers.ModelSerializer):
 
         product = movement.product
 
+        store = StockLocation.objects.get(
+            location_type="STORE",
+            active=True,
+        )
+
         if movement.movement_type == "ENTRY":
 
             if batch_number and expiration_date:
                 batch, created = ProductBatch.objects.get_or_create(
                     product=product,
                     batch_number=batch_number,
+                    location=store,
                     defaults={
                         "quantity": movement.quantity,
                         "expiration_date": expiration_date,
@@ -414,6 +421,107 @@ class StockTransferSerializer(serializers.ModelSerializer):
                     )
                 }
             )
+
+        remaining_quantity = quantity
+
+        source_batches = (
+            ProductBatch.objects
+            .select_for_update()
+            .filter(
+                product=product,
+                location=source,
+                active=True,
+                quantity__gt=0,
+                expiration_date__gt=timezone.localdate(),
+            )
+            .order_by(
+                "expiration_date",
+                "received_at",
+            )
+        )
+
+        available_batch_stock = sum(
+            batch.quantity
+            for batch in source_batches
+        )
+
+        if available_batch_stock < quantity:
+            raise serializers.ValidationError(
+                {
+                    "quantity": (
+                        "Stock insuffisant dans les lots "
+                        "disponibles de l'emplacement source."
+                    )
+                }
+            )
+
+        for source_batch in source_batches:
+            if remaining_quantity <= 0:
+                break
+
+            quantity_to_transfer = min(
+                source_batch.quantity,
+                remaining_quantity,
+            )
+
+            destination_batch, created = (
+                ProductBatch.objects
+                .select_for_update()
+                .get_or_create(
+                    product=product,
+                    batch_number=source_batch.batch_number,
+                    location=destination,
+                    defaults={
+                        "quantity": 0,
+                        "expiration_date": (
+                            source_batch.expiration_date
+                        ),
+                        "supplier": source_batch.supplier,
+                        "active": True,
+                    },
+                )
+            )
+
+            if not created:
+                if (
+                    destination_batch.expiration_date
+                    != source_batch.expiration_date
+                ):
+                    raise serializers.ValidationError(
+                        {
+                            "batch": (
+                                "Le même numéro de lot existe "
+                                "dans la destination avec une "
+                                "date d'expiration différente."
+                            )
+                        }
+                    )
+
+            source_batch.quantity -= quantity_to_transfer
+            destination_batch.quantity += quantity_to_transfer
+
+            if source_batch.quantity == 0:
+                source_batch.active = False
+
+            destination_batch.active = True
+
+            source_batch.save(
+                update_fields=[
+                    "quantity",
+                    "active",
+                    "updated_at",
+                ]
+            )
+
+            destination_batch.save(
+                update_fields=[
+                    "quantity",
+                    "active",
+                    "updated_at",
+                ]
+            )
+
+            remaining_quantity -= quantity_to_transfer
 
         if quantity > source_stock.quantity:
             raise serializers.ValidationError(
