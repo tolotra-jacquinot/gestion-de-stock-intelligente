@@ -21,14 +21,25 @@ class StockMovementSerializer(serializers.ModelSerializer):
         movement_type = attrs.get("movement_type")
         quantity = attrs.get("quantity")
 
-        if movement_type == "EXIT" and quantity > product.stock:
-            raise serializers.ValidationError(
-                {
-                    "quantity": (
-                        "Stock insuffisant pour effectuer cette sortie."
-                    )
-                }
+        if movement_type == "EXIT":
+            available_batch_stock = sum(
+                batch.quantity
+                for batch in ProductBatch.objects.filter(
+                    product=product,
+                    active=True,
+                    quantity__gt=0,
+                )
             )
+
+            if quantity > available_batch_stock:
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "Stock insuffisant dans les lots "
+                            "pour effectuer cette sortie."
+                        )
+                    }
+                )
 
         return attrs
 
@@ -44,6 +55,45 @@ class StockMovementSerializer(serializers.ModelSerializer):
             product.stock += movement.quantity
 
         elif movement.movement_type == "EXIT":
+            remaining_quantity = movement.quantity
+
+            batches = (
+                ProductBatch.objects
+                .select_for_update()
+                .filter(
+                    product=product,
+                    active=True,
+                    quantity__gt=0,
+                )
+                .order_by(
+                    "expiration_date",
+                    "received_at",
+                )
+            )
+
+            for batch in batches:
+                if remaining_quantity <= 0:
+                    break
+
+                quantity_to_take = min(
+                    batch.quantity,
+                    remaining_quantity,
+                )
+
+                batch.quantity -= quantity_to_take
+                remaining_quantity -= quantity_to_take
+
+                if batch.quantity == 0:
+                    batch.active = False
+
+                batch.save(
+                    update_fields=[
+                        "quantity",
+                        "active",
+                        "updated_at",
+                    ]
+                )
+
             product.stock -= movement.quantity
 
         elif movement.movement_type == "ADJUSTMENT":
