@@ -1,8 +1,18 @@
+from django.utils import timezone
 from django.db import transaction
 from rest_framework import serializers
 
 from .models import StockMovement, RestockOrder, ProductBatch
 
+def validate_batch_expiration(value):
+    today = timezone.localdate()
+
+    if value <= today:
+        raise serializers.ValidationError(
+            "La date d'expiration du lot doit être postérieure à aujourd'hui."
+        )
+
+    return value
 
 class StockMovementSerializer(serializers.ModelSerializer):
 
@@ -61,6 +71,15 @@ class StockMovementSerializer(serializers.ModelSerializer):
                     }
                 )
 
+            try:
+                validate_batch_expiration(expiration_date)
+            except serializers.ValidationError as exc:
+                raise serializers.ValidationError(
+                    {
+                        "expiration_date": exc.detail
+                    }
+                )
+
             projected_stock = product.stock + quantity
 
             if projected_stock > product.max_stock:
@@ -80,6 +99,7 @@ class StockMovementSerializer(serializers.ModelSerializer):
                     product=product,
                     active=True,
                     quantity__gt=0,
+                    expiration_date__gt=timezone.localdate(),
                 )
             )
 
@@ -169,6 +189,7 @@ class StockMovementSerializer(serializers.ModelSerializer):
                     product=product,
                     active=True,
                     quantity__gt=0,
+                    expiration_date__gt=timezone.localdate(),
                 )
                 .order_by(
                     "expiration_date",
@@ -313,3 +334,6 @@ class ProductBatchSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+    def validate_expiration_date(self, value):
+        return validate_batch_expiration(value)
