@@ -6,6 +6,22 @@ from .models import StockMovement, RestockOrder, ProductBatch
 
 class StockMovementSerializer(serializers.ModelSerializer):
 
+    batch_number = serializers.CharField(
+        write_only=True,
+        required=False,
+    )
+
+    expiration_date = serializers.DateField(
+        write_only=True,
+        required=False,
+    )
+
+    batch_supplier = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+    )
+
     user_name = serializers.CharField(
         source="user.username",
         read_only=True
@@ -20,6 +36,42 @@ class StockMovementSerializer(serializers.ModelSerializer):
         product = attrs.get("product")
         movement_type = attrs.get("movement_type")
         quantity = attrs.get("quantity")
+
+        if movement_type == "ENTRY":
+            batch_number = attrs.get("batch_number")
+            expiration_date = attrs.get("expiration_date")
+
+            if not batch_number:
+                raise serializers.ValidationError(
+                    {
+                        "batch_number": (
+                            "Le numéro de lot est obligatoire "
+                            "pour une entrée de stock."
+                        )
+                    }
+                )
+
+            if not expiration_date:
+                raise serializers.ValidationError(
+                    {
+                        "expiration_date": (
+                            "La date d'expiration est obligatoire "
+                            "pour une entrée de stock."
+                        )
+                    }
+                )
+
+            projected_stock = product.stock + quantity
+
+            if projected_stock > product.max_stock:
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "Cette entrée ferait dépasser "
+                            "le stock maximum du produit."
+                        )
+                    }
+                )
 
         if movement_type == "EXIT":
             available_batch_stock = sum(
@@ -45,6 +97,20 @@ class StockMovementSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+
+        batch_number = validated_data.pop(
+            "batch_number",
+            None,
+        )
+        expiration_date = validated_data.pop(
+            "expiration_date",
+            None,
+        )
+        batch_supplier = validated_data.pop(
+            "batch_supplier",
+            "",
+        )
+
         movement = StockMovement.objects.create(
             **validated_data
         )
@@ -52,6 +118,45 @@ class StockMovementSerializer(serializers.ModelSerializer):
         product = movement.product
 
         if movement.movement_type == "ENTRY":
+
+            if batch_number and expiration_date:
+                batch, created = ProductBatch.objects.get_or_create(
+                    product=product,
+                    batch_number=batch_number,
+                    defaults={
+                        "quantity": movement.quantity,
+                        "expiration_date": expiration_date,
+                        "supplier": batch_supplier,
+                        "active": True,
+                    },
+                )
+
+                if not created:
+                    if batch.expiration_date != expiration_date:
+                        raise serializers.ValidationError(
+                            {
+                                "expiration_date": (
+                                    "Ce numéro de lot existe déjà "
+                                    "avec une autre date d'expiration."
+                                )
+                            }
+                        )
+
+                    batch.quantity += movement.quantity
+                    batch.active = True
+
+                    if batch_supplier:
+                        batch.supplier = batch_supplier
+
+                    batch.save(
+                        update_fields=[
+                            "quantity",
+                            "active",
+                            "supplier",
+                            "updated_at",
+                        ]
+                    )
+
             product.stock += movement.quantity
 
         elif movement.movement_type == "EXIT":
