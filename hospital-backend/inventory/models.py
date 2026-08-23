@@ -232,6 +232,12 @@ class ProductBatch(models.Model):
         related_name="batches",
     )
 
+    location = models.ForeignKey(
+        StockLocation,
+        on_delete=models.PROTECT,
+        related_name="batches",
+    )
+
     batch_number = models.CharField(
         max_length=100,
     )
@@ -266,8 +272,12 @@ class ProductBatch(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["product", "batch_number"],
-                name="unique_batch_number_per_product",
+                fields=[
+                    "product",
+                    "batch_number",
+                    "location",
+                ],
+                name="unique_batch_number_per_location",
             )
         ]
 

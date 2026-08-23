@@ -11,7 +11,7 @@ from .permissions import (
     RestockOrderPermission,
 )
 
-from .models import StockMovement, RestockOrder, ProductBatch, StockTransfer
+from .models import StockMovement, RestockOrder, ProductBatch, StockTransfer, StockLocation
 
 from .serializers import (
     StockMovementSerializer,
@@ -183,10 +183,16 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        store = StockLocation.objects.get(
+            location_type="STORE",
+            active=True,
+        )
+
         batch_serializer = ProductBatchSerializer(
             data={
                 "product": product.id,
                 "batch_number": batch_number,
+                "location": store.id,
                 "quantity": restock_order.quantity,
                 "expiration_date": expiration_date,
                 "supplier": restock_order.supplier,
