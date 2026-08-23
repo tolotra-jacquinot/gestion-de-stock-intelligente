@@ -3,6 +3,78 @@ from django.db import models
 
 from products.models import Product
 
+class StockLocation(models.Model):
+
+    LOCATION_TYPES = [
+        ("STORE", "Magasin"),
+        ("PHARMACY", "Pharmacie"),
+    ]
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    location_type = models.CharField(
+        max_length=20,
+        choices=LOCATION_TYPES,
+    )
+
+    active = models.BooleanField(
+        default=True,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return self.name
+
+class LocationStock(models.Model):
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="location_stocks",
+    )
+
+    location = models.ForeignKey(
+        StockLocation,
+        on_delete=models.CASCADE,
+        related_name="product_stocks",
+    )
+
+    quantity = models.PositiveIntegerField(
+        default=0,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "location"],
+                name="unique_product_stock_per_location",
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.product.name} - "
+            f"{self.location.name} : "
+            f"{self.quantity}"
+        )
 
 class StockMovement(models.Model):
 
