@@ -366,3 +366,38 @@ class SaleItem(models.Model):
             f"Vente #{self.sale_id} - "
             f"{self.product.name} x {self.quantity}"
         )
+
+class SaleItemBatch(models.Model):
+
+    sale_item = models.ForeignKey(
+        SaleItem,
+        on_delete=models.CASCADE,
+        related_name="batch_usages",
+    )
+
+    batch = models.ForeignKey(
+        ProductBatch,
+        on_delete=models.PROTECT,
+        related_name="sale_usages",
+    )
+
+    quantity = models.PositiveIntegerField()
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="sale_item_batch_quantity_gt_zero",
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"Vente #{self.sale_item.sale_id} - "
+            f"{self.batch.batch_number} "
+            f"({self.quantity})"
+        )

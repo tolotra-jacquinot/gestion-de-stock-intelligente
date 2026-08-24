@@ -11,6 +11,7 @@ from .models import (
     StockLocation,
     Sale,
     SaleItem,
+    SaleItemBatch,
 )
 
 def validate_batch_expiration(value):
@@ -219,6 +220,12 @@ class StockMovementSerializer(serializers.ModelSerializer):
                 quantity_to_take = min(
                     batch.quantity,
                     remaining_quantity,
+                )
+
+                SaleItemBatch.objects.create(
+                    sale_item=sale_item,
+                    batch=batch,
+                    quantity=quantity_to_take,
                 )
 
                 batch.quantity -= quantity_to_take
@@ -697,6 +704,7 @@ class SaleSerializer(serializers.ModelSerializer):
 
         stock_entries = {}
 
+        # Vérifier tous les produits avant de créer la vente
         for item_data in items_data:
             product = item_data["product"]
             quantity = item_data["quantity"]
@@ -760,6 +768,18 @@ class SaleSerializer(serializers.ModelSerializer):
             product = item_data["product"]
             quantity = item_data["quantity"]
 
+            unit_price = product.unit_price
+            subtotal = unit_price * quantity
+
+            # Créer d'abord la ligne de vente
+            sale_item = SaleItem.objects.create(
+                sale=sale,
+                product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                subtotal=subtotal,
+            )
+
             remaining_quantity = quantity
 
             batches = (
@@ -787,6 +807,13 @@ class SaleSerializer(serializers.ModelSerializer):
                     remaining_quantity,
                 )
 
+                # Enregistrer le lot réellement utilisé
+                SaleItemBatch.objects.create(
+                    sale_item=sale_item,
+                    batch=batch,
+                    quantity=quantity_to_take,
+                )
+
                 batch.quantity -= quantity_to_take
                 remaining_quantity -= quantity_to_take
 
@@ -812,17 +839,6 @@ class SaleSerializer(serializers.ModelSerializer):
                     "quantity",
                     "updated_at",
                 ]
-            )
-
-            unit_price = product.unit_price
-            subtotal = unit_price * quantity
-
-            SaleItem.objects.create(
-                sale=sale,
-                product=product,
-                quantity=quantity,
-                unit_price=unit_price,
-                subtotal=subtotal,
             )
 
             total_amount += subtotal
