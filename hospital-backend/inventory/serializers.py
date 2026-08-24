@@ -9,6 +9,8 @@ from .models import (
     StockTransfer,
     LocationStock,
     StockLocation,
+    Sale,
+    SaleItem,
 )
 
 def validate_batch_expiration(value):
@@ -596,3 +598,241 @@ class StockTransferSerializer(serializers.ModelSerializer):
         )
 
         return transfer
+
+class SaleItemSerializer(serializers.ModelSerializer):
+
+    product_name = serializers.CharField(
+        source="product.name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = SaleItem
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "quantity",
+            "unit_price",
+            "subtotal",
+        ]
+
+        read_only_fields = [
+            "unit_price",
+            "subtotal",
+        ]
+
+
+class SaleSerializer(serializers.ModelSerializer):
+
+    items = SaleItemSerializer(
+        many=True,
+    )
+
+    sold_by_name = serializers.CharField(
+        source="sold_by.username",
+        read_only=True,
+    )
+
+    pharmacy_name = serializers.CharField(
+        source="pharmacy.name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = Sale
+        fields = [
+            "id",
+            "pharmacy",
+            "pharmacy_name",
+            "sold_by",
+            "sold_by_name",
+            "customer_name",
+            "total_amount",
+            "created_at",
+            "items",
+        ]
+
+        read_only_fields = [
+            "sold_by",
+            "total_amount",
+            "created_at",
+        ]
+
+    def validate_pharmacy(self, value):
+        if value.location_type != "PHARMACY":
+            raise serializers.ValidationError(
+                "La vente doit être enregistrée dans une pharmacie."
+            )
+
+        if not value.active:
+            raise serializers.ValidationError(
+                "Cette pharmacie est inactive."
+            )
+
+        return value
+
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                "La vente doit contenir au moins un produit."
+            )
+
+        for item in value:
+            if item["quantity"] <= 0:
+                raise serializers.ValidationError(
+                    "La quantité doit être supérieure à zéro."
+                )
+
+        return value
+
+    @transaction.atomic
+    def create(self, validated_data):
+
+        items_data = validated_data.pop(
+            "items"
+        )
+
+        pharmacy = validated_data["pharmacy"]
+
+        stock_entries = {}
+
+        for item_data in items_data:
+            product = item_data["product"]
+            quantity = item_data["quantity"]
+
+            pharmacy_stock = (
+                LocationStock.objects
+                .select_for_update()
+                .filter(
+                    product=product,
+                    location=pharmacy,
+                )
+                .first()
+            )
+
+            if (
+                not pharmacy_stock
+                or pharmacy_stock.quantity < quantity
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "items": (
+                            f"Stock pharmacie insuffisant "
+                            f"pour {product.name}."
+                        )
+                    }
+                )
+
+            available_batch_stock = sum(
+                batch.quantity
+                for batch in (
+                    ProductBatch.objects
+                    .filter(
+                        product=product,
+                        location=pharmacy,
+                        active=True,
+                        quantity__gt=0,
+                        expiration_date__gt=timezone.localdate(),
+                    )
+                )
+            )
+
+            if available_batch_stock < quantity:
+                raise serializers.ValidationError(
+                    {
+                        "items": (
+                            f"Stock insuffisant dans les lots "
+                            f"disponibles pour {product.name}."
+                        )
+                    }
+                )
+
+            stock_entries[product.id] = pharmacy_stock
+
+        sale = Sale.objects.create(
+            **validated_data
+        )
+
+        total_amount = 0
+
+        for item_data in items_data:
+            product = item_data["product"]
+            quantity = item_data["quantity"]
+
+            remaining_quantity = quantity
+
+            batches = (
+                ProductBatch.objects
+                .select_for_update()
+                .filter(
+                    product=product,
+                    location=pharmacy,
+                    active=True,
+                    quantity__gt=0,
+                    expiration_date__gt=timezone.localdate(),
+                )
+                .order_by(
+                    "expiration_date",
+                    "received_at",
+                )
+            )
+
+            for batch in batches:
+                if remaining_quantity <= 0:
+                    break
+
+                quantity_to_take = min(
+                    batch.quantity,
+                    remaining_quantity,
+                )
+
+                batch.quantity -= quantity_to_take
+                remaining_quantity -= quantity_to_take
+
+                if batch.quantity == 0:
+                    batch.active = False
+
+                batch.save(
+                    update_fields=[
+                        "quantity",
+                        "active",
+                        "updated_at",
+                    ]
+                )
+
+            pharmacy_stock = stock_entries[
+                product.id
+            ]
+
+            pharmacy_stock.quantity -= quantity
+
+            pharmacy_stock.save(
+                update_fields=[
+                    "quantity",
+                    "updated_at",
+                ]
+            )
+
+            unit_price = product.unit_price
+            subtotal = unit_price * quantity
+
+            SaleItem.objects.create(
+                sale=sale,
+                product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                subtotal=subtotal,
+            )
+
+            total_amount += subtotal
+
+        sale.total_amount = total_amount
+
+        sale.save(
+            update_fields=[
+                "total_amount",
+            ]
+        )
+
+        return sale

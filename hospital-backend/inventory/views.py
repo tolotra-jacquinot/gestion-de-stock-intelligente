@@ -11,13 +11,14 @@ from .permissions import (
     RestockOrderPermission,
 )
 
-from .models import StockMovement, RestockOrder, ProductBatch, StockTransfer, StockLocation
+from .models import StockMovement, RestockOrder, ProductBatch, StockTransfer, StockLocation, Sale
 
 from .serializers import (
     StockMovementSerializer,
     RestockOrderSerializer,
     ProductBatchSerializer,
     StockTransferSerializer,
+    SaleSerializer,
 )
 
 
@@ -238,4 +239,26 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
                     batch
                 ).data,
             }
+        )
+
+class SaleViewSet(viewsets.ModelViewSet):
+    queryset = Sale.objects.all().order_by(
+        "-created_at"
+    )
+
+    serializer_class = SaleSerializer
+    permission_classes = [
+        StockMovementPermission
+    ]
+
+    http_method_names = [
+        "get",
+        "post",
+        "head",
+        "options",
+    ]
+
+    def perform_create(self, serializer):
+        serializer.save(
+            sold_by=self.request.user
         )
