@@ -606,10 +606,35 @@ class StockTransferSerializer(serializers.ModelSerializer):
 
         return transfer
 
+class SaleItemBatchSerializer(serializers.ModelSerializer):
+
+    batch_number = serializers.CharField(
+        source="batch.batch_number",
+        read_only=True,
+    )
+
+    expiration_date = serializers.DateField(
+        source="batch.expiration_date",
+        read_only=True,
+    )
+
+    class Meta:
+        model = SaleItemBatch
+        fields = [
+            "batch_number",
+            "expiration_date",
+            "quantity",
+        ]
+
 class SaleItemSerializer(serializers.ModelSerializer):
 
     product_name = serializers.CharField(
         source="product.name",
+        read_only=True,
+    )
+
+    batch_usages = SaleItemBatchSerializer(
+        many=True,
         read_only=True,
     )
 
@@ -622,6 +647,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
             "quantity",
             "unit_price",
             "subtotal",
+            "batch_usages",
         ]
 
         read_only_fields = [
@@ -631,6 +657,8 @@ class SaleItemSerializer(serializers.ModelSerializer):
 
 
 class SaleSerializer(serializers.ModelSerializer):
+
+    receipt_number = serializers.SerializerMethodField()
 
     items = SaleItemSerializer(
         many=True,
@@ -650,6 +678,7 @@ class SaleSerializer(serializers.ModelSerializer):
         model = Sale
         fields = [
             "id",
+            "receipt_number",
             "pharmacy",
             "pharmacy_name",
             "sold_by",
@@ -665,6 +694,9 @@ class SaleSerializer(serializers.ModelSerializer):
             "total_amount",
             "created_at",
         ]
+
+    def get_receipt_number(self, obj):
+        return f"VENTE-{obj.id:06d}"
 
     def validate_pharmacy(self, value):
         if value.location_type != "PHARMACY":
