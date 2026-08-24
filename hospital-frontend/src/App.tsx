@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import ForgotPassword from "./components/ForgotPassword";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, ShieldAlert, Plus, Settings, Sparkles, Users, ShieldAlert as AlertIcon} from 'lucide-react';
+import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, Sparkles, Users, ShieldAlert as AlertIcon, ShoppingCart} from 'lucide-react';
 
 import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole, RestockOrder} from './types';
 import { apiFetch } from "./api";
@@ -21,6 +21,7 @@ import UsersManagementView from './components/UsersManagementView';
 import AssistantIAView from './components/AssistantIAView';
 import Toast, { ToastType } from "./components/Toast";
 import RestockManagementView from './components/RestockManagementView';
+import SalesView from './components/SalesView';
 
 // Status computer helper
 function computeProductStatus(
@@ -1274,6 +1275,19 @@ const handleSaveProduct = async (data: {
             <span>Réapprovisionnements</span>
           </button>
 
+          {/* Ventes Tab */}
+          <button
+            onClick={() => setActiveTab('sales')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'sales'
+                ? 'bg-blue-800 text-white shadow-xs'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <ShoppingCart className="w-5 h-5 stroke-[2]" />
+            <span>Ventes</span>
+          </button>
+
           {/* Assistant IA Tab */}
           <button 
             onClick={() => setActiveTab('assistant')}
@@ -1395,6 +1409,10 @@ const handleSaveProduct = async (data: {
               />
             )}
 
+            {activeTab === 'sales' && (
+              <SalesView />
+            )}
+
             {activeTab === 'assistant' && (
               <AssistantIAView 
                 products={products}
@@ -1502,6 +1520,21 @@ const handleSaveProduct = async (data: {
           <Package className="w-5 h-5 text-current stroke-[2]" />
           <span className="text-[9px] font-bold mt-0.5 tracking-tight uppercase">
             Réappro.
+          </span>
+        </button>
+
+        {/* Sales Tab */}
+        <button
+          onClick={() => setActiveTab('sales')}
+          className={`flex flex-col items-center justify-center w-16 transition-all ${
+            activeTab === 'sales'
+              ? 'text-blue-800 font-extrabold scale-105'
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          <ShoppingCart className="w-5 h-5 text-current stroke-[2]" />
+          <span className="text-[10px] font-bold mt-0.5 tracking-tight uppercase">
+            Ventes
           </span>
         </button>
 

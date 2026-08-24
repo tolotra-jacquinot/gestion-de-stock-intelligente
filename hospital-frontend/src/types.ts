@@ -84,6 +84,7 @@ export type ActiveTab =
   | 'stock'
   | 'movements'
   | 'restocks'
+  | 'sales'
   | 'profile'
   | 'product-details'
   | 'users'
