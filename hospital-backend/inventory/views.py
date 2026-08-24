@@ -11,12 +11,21 @@ from .permissions import (
     RestockOrderPermission,
 )
 
-from .models import StockMovement, RestockOrder, ProductBatch, StockTransfer, StockLocation, Sale
+from .models import (
+    StockMovement,
+    RestockOrder,
+    ProductBatch,
+    StockTransfer,
+    StockLocation,
+    LocationStock,
+    Sale,
+)
 
 from .serializers import (
     StockMovementSerializer,
     RestockOrderSerializer,
     ProductBatchSerializer,
+    PharmacyStockSerializer,
     StockTransferSerializer,
     SaleSerializer,
 )
@@ -51,6 +60,39 @@ class ProductBatchViewSet(viewsets.ModelViewSet):
         "head",
         "options",
     ]
+
+class PharmacyStockViewSet(viewsets.ReadOnlyModelViewSet):
+
+    serializer_class = PharmacyStockSerializer
+
+    permission_classes = [
+        StockMovementPermission
+    ]
+
+    def get_queryset(self):
+        today = timezone.localdate()
+
+        return (
+            LocationStock.objects
+            .select_related(
+                "product",
+                "location",
+            )
+            .filter(
+                location__location_type="PHARMACY",
+                location__active=True,
+                quantity__gt=0,
+                product__active=True,
+                product__batches__location__location_type="PHARMACY",
+                product__batches__active=True,
+                product__batches__quantity__gt=0,
+                product__batches__expiration_date__gt=today,
+            )
+            .distinct()
+            .order_by(
+                "product__name"
+            )
+        )
 
 class StockTransferViewSet(viewsets.ModelViewSet):
     queryset = StockTransfer.objects.all().order_by(

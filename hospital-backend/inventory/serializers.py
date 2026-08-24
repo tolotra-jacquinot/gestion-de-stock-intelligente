@@ -360,6 +360,39 @@ class ProductBatchSerializer(serializers.ModelSerializer):
     def validate_expiration_date(self, value):
         return validate_batch_expiration(value)
 
+class PharmacyStockSerializer(serializers.ModelSerializer):
+
+    product_name = serializers.CharField(
+        source="product.name",
+        read_only=True,
+    )
+
+    unit_price = serializers.DecimalField(
+        source="product.unit_price",
+        max_digits=10,
+        decimal_places=2,
+        read_only=True,
+    )
+
+    location_name = serializers.CharField(
+        source="location.name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = LocationStock
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "unit_price",
+            "quantity",
+            "location",
+            "location_name",
+        ]
+
+        read_only_fields = fields
+
 class StockTransferSerializer(serializers.ModelSerializer):
 
     product_name = serializers.CharField(
