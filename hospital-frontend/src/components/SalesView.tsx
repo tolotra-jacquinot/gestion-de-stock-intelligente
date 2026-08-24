@@ -99,32 +99,32 @@ export default function SalesView() {
     fetchSales();
   }, []);
 
+  const fetchProducts = async () => {
+    try {
+      const response = await apiFetch(
+        "http://127.0.0.1:8000/api/pharmacy-stocks/"
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Erreur API produits : ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      setProducts(data);
+    } catch (error) {
+      console.error(
+        "Erreur lors du chargement des produits :",
+        error
+      );
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-        try {
-        const response = await apiFetch(
-            "http://127.0.0.1:8000/api/pharmacy-stocks/"
-        );
-
-        if (!response.ok) {
-            throw new Error(
-            `Erreur API produits : ${response.status}`
-            );
-        }
-
-        const data = await response.json();
-
-        setProducts(data);
-        } catch (error) {
-        console.error(
-            "Erreur lors du chargement des produits :",
-            error
-        );
-        }
-    };
-
     fetchProducts();
-    }, []);
+  }, []);
 
     const handleAddToCart = () => {
         setSaleError("");
@@ -146,14 +146,31 @@ export default function SalesView() {
             return;
         }
 
+        const existingItem = cart.find(
+          (item) => item.product === product.product
+        );
+
+        const quantityAlreadyInCart =
+          existingItem?.quantity ?? 0;
+
+        const requestedQuantity =
+          quantityAlreadyInCart + quantity;
+
+        if (requestedQuantity > product.quantity) {
+          setSaleError(
+            `Stock insuffisant. Disponible en pharmacie : ${product.quantity}.`
+          );
+          return;
+        }
+
         setCart((currentCart) => {
             const existingItem = currentCart.find(
-            (item) => item.product === product.id
+              (item) => item.product === product.product
             );
 
             if (existingItem) {
             return currentCart.map((item) =>
-                item.product === product.id
+                item.product === product.product
                 ? {
                     ...item,
                     quantity: item.quantity + quantity,
@@ -245,6 +262,8 @@ export default function SalesView() {
         data,
         ...currentSales,
         ]);
+
+        await fetchProducts();
 
         setSelectedSale(data);
 
