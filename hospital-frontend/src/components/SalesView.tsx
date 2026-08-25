@@ -52,6 +52,7 @@ interface CartItem {
   product_name: string;
   quantity: number;
   unit_price: number;
+  location: number;
 }
 
 export default function SalesView() {
@@ -186,6 +187,7 @@ export default function SalesView() {
                 product_name: product.product_name,
                 quantity,
                 unit_price: Number(product.unit_price),
+                location: product.location,
             },
             ];
         });
@@ -220,6 +222,8 @@ export default function SalesView() {
         return;
     }
 
+    const pharmacyId = cart[0].location;
+
     try {
         setSubmitting(true);
 
@@ -231,7 +235,7 @@ export default function SalesView() {
             "Content-Type": "application/json",
             },
             body: JSON.stringify({
-            pharmacy: 2,
+            pharmacy: pharmacyId,
             customer_name: customerName,
             items: cart.map((item) => ({
                 product: item.product,
