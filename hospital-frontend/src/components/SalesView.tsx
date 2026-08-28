@@ -42,7 +42,7 @@ interface Product {
   product: number;
   product_name: string;
   unit_price: string;
-  quantity: number;
+  sellable_quantity: number;
   location: number;
   location_name: string;
 }
@@ -157,9 +157,9 @@ export default function SalesView() {
         const requestedQuantity =
           quantityAlreadyInCart + quantity;
 
-        if (requestedQuantity > product.quantity) {
+        if (requestedQuantity > product.sellable_quantity) {
           setSaleError(
-            `Stock insuffisant. Disponible en pharmacie : ${product.quantity}.`
+            `Stock insuffisant. Disponible en pharmacie : ${product.sellable_quantity}.`
           );
           return;
         }
@@ -487,7 +487,7 @@ return (
                         {Number(
                         product.unit_price
                         ).toLocaleString("fr-FR")}{" "}
-                        Ar — disponible : {product.quantity}
+                        Ar — disponible : {product.sellable_quantity}
                     </option>
                     ))}
                 </select>
