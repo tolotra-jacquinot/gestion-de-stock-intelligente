@@ -103,13 +103,44 @@ class StockMovementSerializer(serializers.ModelSerializer):
                 )
 
         if movement_type == "EXIT":
+            store = StockLocation.objects.filter(
+                location_type="STORE",
+                active=True,
+            ).first()
+
+            if not store:
+                raise serializers.ValidationError(
+                    {
+                        "location": (
+                            "Aucun magasin central actif n'est configuré."
+                        )
+                    }
+                )
+
+            store_stock = LocationStock.objects.filter(
+                product=product,
+                location=store,
+            ).first()
+
+            if not store_stock or store_stock.quantity < quantity:
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "Stock insuffisant dans le magasin central."
+                        )
+                    }
+                )
+
             available_batch_stock = sum(
-                batch.quantity
-                for batch in ProductBatch.objects.filter(
+                ProductBatch.objects.filter(
                     product=product,
+                    location=store,
                     active=True,
                     quantity__gt=0,
                     expiration_date__gt=timezone.localdate(),
+                ).values_list(
+                    "quantity",
+                    flat=True,
                 )
             )
 
@@ -118,7 +149,7 @@ class StockMovementSerializer(serializers.ModelSerializer):
                     {
                         "quantity": (
                             "Stock insuffisant dans les lots "
-                            "pour effectuer cette sortie."
+                            "valides du magasin central."
                         )
                     }
                 )
@@ -196,6 +227,24 @@ class StockMovementSerializer(serializers.ModelSerializer):
             product.stock += movement.quantity
 
         elif movement.movement_type == "EXIT":
+            store_stock = (
+                LocationStock.objects
+                .select_for_update()
+                .get(
+                    product=product,
+                    location=store,
+                )
+            )
+
+            if store_stock.quantity < movement.quantity:
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "Stock insuffisant dans le magasin central."
+                        )
+                    }
+                )
+
             remaining_quantity = movement.quantity
 
             batches = (
@@ -203,6 +252,7 @@ class StockMovementSerializer(serializers.ModelSerializer):
                 .select_for_update()
                 .filter(
                     product=product,
+                    location=store,
                     active=True,
                     quantity__gt=0,
                     expiration_date__gt=timezone.localdate(),
@@ -213,6 +263,21 @@ class StockMovementSerializer(serializers.ModelSerializer):
                 )
             )
 
+            available_batch_stock = sum(
+                batch.quantity
+                for batch in batches
+            )
+
+            if available_batch_stock < movement.quantity:
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "Stock insuffisant dans les lots "
+                            "valides du magasin central."
+                        )
+                    }
+                )
+
             for batch in batches:
                 if remaining_quantity <= 0:
                     break
@@ -220,12 +285,6 @@ class StockMovementSerializer(serializers.ModelSerializer):
                 quantity_to_take = min(
                     batch.quantity,
                     remaining_quantity,
-                )
-
-                SaleItemBatch.objects.create(
-                    sale_item=sale_item,
-                    batch=batch,
-                    quantity=quantity_to_take,
                 )
 
                 batch.quantity -= quantity_to_take
@@ -241,6 +300,15 @@ class StockMovementSerializer(serializers.ModelSerializer):
                         "updated_at",
                     ]
                 )
+
+            store_stock.quantity -= movement.quantity
+
+            store_stock.save(
+                update_fields=[
+                    "quantity",
+                    "updated_at",
+                ]
+            )
 
             product.stock -= movement.quantity
 
