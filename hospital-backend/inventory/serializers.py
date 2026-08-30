@@ -379,6 +379,22 @@ class PharmacyStockSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    sellable_quantity = serializers.SerializerMethodField()
+
+    def get_sellable_quantity(self, obj):
+        today = timezone.localdate()
+
+        return sum(
+            batch.quantity
+            for batch in ProductBatch.objects.filter(
+                product=obj.product,
+                location=obj.location,
+                active=True,
+                quantity__gt=0,
+                expiration_date__gt=today,
+            )
+        )
+
     class Meta:
         model = LocationStock
         fields = [
@@ -386,7 +402,7 @@ class PharmacyStockSerializer(serializers.ModelSerializer):
             "product",
             "product_name",
             "unit_price",
-            "quantity",
+            "sellable_quantity",
             "location",
             "location_name",
         ]
