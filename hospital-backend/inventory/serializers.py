@@ -90,14 +90,39 @@ class StockMovementSerializer(serializers.ModelSerializer):
                     }
                 )
 
-            projected_stock = product.stock + quantity
+            store = StockLocation.objects.filter(
+                location_type="STORE",
+                active=True,
+            ).first()
+
+            if not store:
+                raise serializers.ValidationError(
+                    {
+                        "location": (
+                            "Aucun magasin central actif n'est configuré."
+                        )
+                    }
+                )
+
+            store_stock = LocationStock.objects.filter(
+                product=product,
+                location=store,
+            ).first()
+
+            current_store_quantity = (
+                store_stock.quantity
+                if store_stock
+                else 0
+            )
+
+            projected_stock = current_store_quantity + quantity
 
             if projected_stock > product.max_stock:
                 raise serializers.ValidationError(
                     {
                         "quantity": (
                             "Cette entrée ferait dépasser "
-                            "le stock maximum du produit."
+                            "le stock maximum du magasin central."
                         )
                     }
                 )
@@ -198,6 +223,29 @@ class StockMovementSerializer(serializers.ModelSerializer):
                     },
                 )
 
+                store_stock, _ = (
+                    LocationStock.objects
+                    .select_for_update()
+                    .get_or_create(
+                        product=product,
+                        location=store,
+                        defaults={"quantity": 0},
+                    )
+                )
+
+                if (
+                    store_stock.quantity + movement.quantity
+                    > product.max_stock
+                ):
+                    raise serializers.ValidationError(
+                        {
+                            "quantity": (
+                                "Cette entrée ferait dépasser "
+                                "le stock maximum du magasin central."
+                            )
+                        }
+                    )
+
                 if not created:
                     if batch.expiration_date != expiration_date:
                         raise serializers.ValidationError(
@@ -223,6 +271,15 @@ class StockMovementSerializer(serializers.ModelSerializer):
                             "updated_at",
                         ]
                     )
+
+            store_stock.quantity += movement.quantity
+
+            store_stock.save(
+                update_fields=[
+                    "quantity",
+                    "updated_at",
+                ]
+            )
 
             product.stock += movement.quantity
 
