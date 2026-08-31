@@ -176,8 +176,30 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
             .get(pk=restock_order.product_id)
         )
 
+        store = StockLocation.objects.get(
+            location_type="STORE",
+            active=True,
+        )
+
+        store_stock = (
+            LocationStock.objects
+            .select_for_update()
+            .filter(
+                product=product,
+                location=store,
+            )
+            .first()
+        )
+
+        current_store_stock = (
+            store_stock.quantity
+            if store_stock
+            else 0
+        )
+
         projected_stock = (
-            product.stock + restock_order.quantity
+            current_store_stock
+            + restock_order.quantity
         )
 
         if projected_stock > product.max_stock:
@@ -185,8 +207,8 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
                 {
                     "quantity": (
                         "La réception ferait dépasser "
-                        "le stock maximum du produit. "
-                        f"Stock actuel : {product.stock}, "
+                        "le stock maximum du magasin central. "
+                        f"Stock actuel : {current_store_stock}, "
                         f"quantité à recevoir : "
                         f"{restock_order.quantity}, "
                         f"maximum : {product.max_stock}."
@@ -218,10 +240,6 @@ class RestockOrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        store = StockLocation.objects.get(
-            location_type="STORE",
-            active=True,
-        )
 
         batch_serializer = ProductBatchSerializer(
             data={
