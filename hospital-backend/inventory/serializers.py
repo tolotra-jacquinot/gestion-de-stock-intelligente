@@ -923,6 +923,16 @@ class SaleSerializer(serializers.ModelSerializer):
                 "La vente doit contenir au moins un produit."
             )
 
+        product_ids = [
+            item["product"].id
+            for item in value
+        ]
+
+        if len(product_ids) != len(set(product_ids)):
+            raise serializers.ValidationError(
+                "Un même produit ne peut apparaître qu'une seule fois dans une vente."
+            )
+
         for item in value:
             if item["quantity"] <= 0:
                 raise serializers.ValidationError(
@@ -1064,6 +1074,16 @@ class SaleSerializer(serializers.ModelSerializer):
                         "active",
                         "updated_at",
                     ]
+                )
+
+            if remaining_quantity > 0:
+                raise serializers.ValidationError(
+                    {
+                        "items": (
+                            f"Stock insuffisant dans les lots disponibles "
+                            f"pour {product.name}."
+                        )
+                    }
                 )
 
             pharmacy_stock = stock_entries[
