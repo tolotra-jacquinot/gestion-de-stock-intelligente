@@ -41,7 +41,7 @@ class StockMovementViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-class ProductBatchViewSet(viewsets.ModelViewSet):
+class ProductBatchViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProductBatch.objects.all().order_by(
         "expiration_date",
         "created_at",
@@ -51,14 +51,6 @@ class ProductBatchViewSet(viewsets.ModelViewSet):
 
     permission_classes = [
         StockMovementPermission
-    ]
-
-    http_method_names = [
-        "get",
-        "post",
-        "patch",
-        "head",
-        "options",
     ]
 
 class PharmacyStockViewSet(viewsets.ReadOnlyModelViewSet):
