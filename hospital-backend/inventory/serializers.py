@@ -57,6 +57,17 @@ class StockMovementSerializer(serializers.ModelSerializer):
         movement_type = attrs.get("movement_type")
         quantity = attrs.get("quantity")
 
+        if movement_type == "ADJUSTMENT":
+            raise serializers.ValidationError(
+                {
+                    "movement_type": (
+                        "Les ajustements directs de stock sont temporairement "
+                        "désactivés afin d'éviter une désynchronisation entre "
+                        "le stock par emplacement et les lots."
+                    )
+                }
+            )
+
         if movement_type == "ENTRY":
             batch_number = attrs.get("batch_number")
             expiration_date = attrs.get("expiration_date")
