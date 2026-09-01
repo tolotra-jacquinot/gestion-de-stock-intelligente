@@ -220,6 +220,28 @@ class StockMovementSerializer(serializers.ModelSerializer):
         )
 
         if movement.movement_type == "ENTRY":
+            store_stock, _ = (
+                LocationStock.objects
+                .select_for_update()
+                .get_or_create(
+                    product=product,
+                    location=store,
+                    defaults={"quantity": 0},
+                )
+            )
+
+            if (
+                store_stock.quantity + movement.quantity
+                > product.max_stock
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "Cette entrée ferait dépasser "
+                            "le stock maximum du magasin central."
+                        )
+                    }
+                )
 
             if batch_number and expiration_date:
                 batch, created = ProductBatch.objects.get_or_create(
@@ -233,29 +255,6 @@ class StockMovementSerializer(serializers.ModelSerializer):
                         "active": True,
                     },
                 )
-
-                store_stock, _ = (
-                    LocationStock.objects
-                    .select_for_update()
-                    .get_or_create(
-                        product=product,
-                        location=store,
-                        defaults={"quantity": 0},
-                    )
-                )
-
-                if (
-                    store_stock.quantity + movement.quantity
-                    > product.max_stock
-                ):
-                    raise serializers.ValidationError(
-                        {
-                            "quantity": (
-                                "Cette entrée ferait dépasser "
-                                "le stock maximum du magasin central."
-                            )
-                        }
-                    )
 
                 if not created:
                     if batch.expiration_date != expiration_date:
