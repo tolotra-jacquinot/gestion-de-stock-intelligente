@@ -2,6 +2,8 @@ from django.utils import timezone
 from django.db import transaction
 from rest_framework import serializers
 
+from products.models import Product
+
 from .models import (
     StockMovement,
     RestockOrder,
@@ -949,12 +951,39 @@ class SaleSerializer(serializers.ModelSerializer):
 
         pharmacy = validated_data["pharmacy"]
 
+        product_ids = [
+            item_data["product"].id
+            for item_data in items_data
+        ]
+
+        locked_products = {
+            product.id: product
+            for product in (
+                Product.objects
+                .select_for_update()
+                .filter(id__in=product_ids)
+                .order_by("id")
+            )
+        }
+
         stock_entries = {}
 
         # Vérifier tous les produits avant de créer la vente
         for item_data in items_data:
-            product = item_data["product"]
+            product = locked_products[
+                item_data["product"].id
+            ]
             quantity = item_data["quantity"]
+
+            if product.stock < quantity:
+                raise serializers.ValidationError(
+                    {
+                        "items": (
+                            f"Stock global insuffisant "
+                            f"pour {product.name}."
+                        )
+                    }
+                )
 
             pharmacy_stock = (
                 LocationStock.objects
@@ -1012,7 +1041,9 @@ class SaleSerializer(serializers.ModelSerializer):
         total_amount = 0
 
         for item_data in items_data:
-            product = item_data["product"]
+            product = locked_products[
+                item_data["product"].id
+            ]
             quantity = item_data["quantity"]
 
             unit_price = product.unit_price
@@ -1094,6 +1125,15 @@ class SaleSerializer(serializers.ModelSerializer):
             pharmacy_stock.save(
                 update_fields=[
                     "quantity",
+                    "updated_at",
+                ]
+            )
+
+            product.stock -= quantity
+
+            product.save(
+                update_fields=[
+                    "stock",
                     "updated_at",
                 ]
             )
