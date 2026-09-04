@@ -210,11 +210,17 @@ class StockMovementSerializer(serializers.ModelSerializer):
             "",
         )
 
+        product = (
+            Product.objects
+            .select_for_update()
+            .get(pk=validated_data["product"].pk)
+        )
+
+        validated_data["product"] = product
+
         movement = StockMovement.objects.create(
             **validated_data
         )
-
-        product = movement.product
 
         store = StockLocation.objects.get(
             location_type="STORE",
@@ -314,8 +320,16 @@ class StockMovementSerializer(serializers.ModelSerializer):
                     }
                 )
 
+            if product.stock < movement.quantity:
+                raise serializers.ValidationError(
+                    {
+                        "quantity": (
+                            "Stock global insuffisant "
+                            "pour cette sortie."
+                        )
+                    }
+                )
             remaining_quantity = movement.quantity
-
             batches = (
                 ProductBatch.objects
                 .select_for_update()
@@ -385,7 +399,10 @@ class StockMovementSerializer(serializers.ModelSerializer):
             product.stock = movement.quantity
 
         product.save(
-            update_fields=["stock"]
+            update_fields=[
+                "stock",
+                "updated_at",
+            ]
         )
 
         return movement
