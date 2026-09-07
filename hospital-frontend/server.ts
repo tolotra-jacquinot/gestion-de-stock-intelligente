@@ -32,7 +32,7 @@ async function startServer() {
   // Special chat endpoint mapping to Gemini and receiving real-time hospital inventory context
   app.post("/api/chat", async (req, res) => {
     try {
-      const { messages, products, movements } = req.body;
+      const { messages, products, movements } = req.body ?? {};
 
       if (!apiKey) {
         return res.status(500).json({ 
@@ -115,7 +115,7 @@ ${formattedMovements || "Aucun mouvement de stock enregistré."}
     console.log("Starting production environment serving static build folder...");
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get("/{*splat}", (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

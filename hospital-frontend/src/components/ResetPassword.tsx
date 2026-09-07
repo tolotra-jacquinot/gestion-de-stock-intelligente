@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -26,7 +26,9 @@ export default function ResetPassword() {
 
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     setError("");
