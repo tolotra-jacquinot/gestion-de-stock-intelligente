@@ -1,0 +1,56 @@
+name: Frontend checks
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "hospital-frontend/**"
+      - ".github/workflows/frontend-checks.yml"
+
+  push:
+    branches:
+      - main
+    paths:
+      - "hospital-frontend/**"
+      - ".github/workflows/frontend-checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-checks:
+    name: TypeScript, audit and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: hospital-frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: hospital-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Check TypeScript
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
