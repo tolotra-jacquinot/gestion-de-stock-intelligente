@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Routes, Route } from "react-router-dom";
 import ForgotPassword from "./components/ForgotPassword";
-import React, { useState, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from "react";
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, Sparkles, Users, ShieldAlert as AlertIcon, ShoppingCart} from 'lucide-react';
 
@@ -10,18 +10,45 @@ import { apiFetch } from "./api";
 
 import LoginView from './components/LoginView';
 import ResetPassword from "./components/ResetPassword";
-import DashboardView from './components/DashboardView';
-import StockView from './components/StockView';
-import MovementsView from './components/MovementsView';
-import ProfilView from './components/ProfilView';
-import ProductDetailsView from './components/ProductDetailsView';
 import AddProductModal from './components/AddProductModal';
 import QuickMovementModal from './components/QuickMovementModal';
-import UsersManagementView from './components/UsersManagementView';
-import AssistantIAView from './components/AssistantIAView';
 import Toast, { ToastType } from "./components/Toast";
-import RestockManagementView from './components/RestockManagementView';
-import SalesView from './components/SalesView';
+
+const DashboardView = lazy(
+  () => import("./components/DashboardView")
+);
+
+const StockView = lazy(
+  () => import("./components/StockView")
+);
+
+const MovementsView = lazy(
+  () => import("./components/MovementsView")
+);
+
+const ProfilView = lazy(
+  () => import("./components/ProfilView")
+);
+
+const ProductDetailsView = lazy(
+  () => import("./components/ProductDetailsView")
+);
+
+const UsersManagementView = lazy(
+  () => import("./components/UsersManagementView")
+);
+
+const AssistantIAView = lazy(
+  () => import("./components/AssistantIAView")
+);
+
+const RestockManagementView = lazy(
+  () => import("./components/RestockManagementView")
+);
+
+const SalesView = lazy(
+  () => import("./components/SalesView")
+);
 
 // Status computer helper
 function computeProductStatus(
@@ -1360,6 +1387,17 @@ const handleSaveProduct = async (data: {
 
       {/* Main Core Router Workspace Panel */}
       <main className="flex-grow pt-24 pb-28 md:pb-12 md:pl-70 px-4 max-w-6xl mx-auto w-full">
+
+      <Suspense
+        fallback={
+          <div
+            role="status"
+            className="flex min-h-64 items-center justify-center text-sm text-slate-500 dark:text-slate-400"
+          >
+            Chargement de l'écran...
+          </div>
+        }
+      >
         
         <AnimatePresence mode="wait">
           <motion.div
@@ -1464,6 +1502,7 @@ const handleSaveProduct = async (data: {
 
           </motion.div>
         </AnimatePresence>
+      </Suspense>
 
       </main>
 
