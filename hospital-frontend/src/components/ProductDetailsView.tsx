@@ -497,12 +497,12 @@ export default function ProductDetailsView({
           {/* Details lines */}
           <div className="w-full space-y-2.5 pt-2">
             <div className="flex justify-between text-xs font-medium">
-              <span className="text-slate-450">Seuil Critique</span>
+              <span className="text-slate-500 dark:text-slate-400">Seuil Critique</span>
               <span className="font-extrabold text-slate-700 dark:text-slate-200">{product.minStock}</span>
             </div>
             
             <div className="flex justify-between text-xs font-medium">
-              <span className="text-slate-450">Stock Maximum</span>
+              <span className="text-slate-500 dark:text-slate-400">Stock Maximum</span>
               <span className="font-extrabold text-slate-700 dark:text-slate-200">{product.maxStock}</span>
             </div>
 
@@ -616,7 +616,7 @@ export default function ProductDetailsView({
                   : "RÉAPPROVISIONNER"}
               </button>
               ) : (
-                <div className="w-full text-center py-2.5 px-3 bg-slate-50 border border-slate-205 text-[11px] text-slate-500 font-bold rounded-lg leading-normal">
+                <div className="w-full text-center py-2.5 px-3 bg-slate-50 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 font-bold rounded-lg leading-normal">
                   Approbation réservée aux pharmaciens et administrateurs
                 </div>
               )}
@@ -645,7 +645,7 @@ export default function ProductDetailsView({
           {productMovements.length > 0 ? (
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-450 dark:text-slate-400 text-[10px] font-black uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
+                <tr className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
                   <th className="p-4 pl-5">Type</th>
                   <th className="p-4">Quantité</th>
                   <th className="p-4">Utilisateur</th>
@@ -863,7 +863,7 @@ export default function ProductDetailsView({
                 type="button"
                 disabled={isArchiving}
                 onClick={() => setArchiveModalOpen(false)}
-                className="flex-1 rounded-lg border border-slate-200 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Annuler
               </button>
