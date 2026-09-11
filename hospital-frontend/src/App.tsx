@@ -1238,7 +1238,7 @@ const handleSaveProduct = async (data: {
           <button
             type="button"
             onClick={() => setActiveTab('stock')}
-            className="p-1.5 hover:bg-slate-150 rounded-full transition-colors text-slate-500"
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500 dark:text-slate-400"
           >
             <Search className="w-5 h-5" />
           </button>
@@ -1515,7 +1515,7 @@ const handleSaveProduct = async (data: {
           className={`flex flex-col items-center justify-center w-16 transition-all ${
             activeTab === 'dashboard' 
               ? 'text-blue-800 font-extrabold scale-105' 
-              : 'text-slate-400 hover:text-slate-650'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <Home className="w-5 h-5 text-current stroke-[2]" />
@@ -1528,7 +1528,7 @@ const handleSaveProduct = async (data: {
           className={`flex flex-col items-center justify-center w-16 transition-all ${
             activeTab === 'stock' || activeTab === 'product-details'
               ? 'text-blue-800 font-extrabold scale-105' 
-              : 'text-slate-400 hover:text-slate-650'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <Package className="w-5 h-5 text-current stroke-[2]" />
@@ -1541,7 +1541,7 @@ const handleSaveProduct = async (data: {
           className={`flex flex-col items-center justify-center w-18 transition-all ${
             activeTab === 'movements' 
               ? 'text-blue-800 font-extrabold scale-105' 
-              : 'text-slate-400 hover:text-slate-650'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <ArrowLeftRight className="w-5 h-5 text-current stroke-[2]" />
@@ -1553,7 +1553,7 @@ const handleSaveProduct = async (data: {
           className={`flex flex-col items-center justify-center w-16 transition-all ${
             activeTab === 'restocks'
               ? 'text-blue-800 font-extrabold scale-105'
-              : 'text-slate-400 hover:text-slate-650'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <Package className="w-5 h-5 text-current stroke-[2]" />
@@ -1568,7 +1568,7 @@ const handleSaveProduct = async (data: {
           className={`flex flex-col items-center justify-center w-16 transition-all ${
             activeTab === 'sales'
               ? 'text-blue-800 font-extrabold scale-105'
-              : 'text-slate-400 hover:text-slate-650'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <ShoppingCart className="w-5 h-5 text-current stroke-[2]" />
@@ -1583,7 +1583,7 @@ const handleSaveProduct = async (data: {
           className={`flex flex-col items-center justify-center w-16 transition-all ${
             activeTab === 'assistant' 
               ? 'text-blue-800 font-extrabold scale-105' 
-              : 'text-slate-400 hover:text-slate-650'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <Sparkles className="w-5 h-5 text-amber-500 stroke-[2]" />
@@ -1596,7 +1596,7 @@ const handleSaveProduct = async (data: {
           className={`flex flex-col items-center justify-center w-16 transition-all ${
             activeTab === 'profile' 
               ? 'text-blue-800 font-extrabold scale-105' 
-              : 'text-slate-400 hover:text-slate-650'
+              : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <User className="w-5 h-5 text-current stroke-[2]" />
@@ -1610,7 +1610,7 @@ const handleSaveProduct = async (data: {
             className={`flex flex-col items-center justify-center w-16 transition-all ${
               activeTab === 'users' 
                 ? 'text-blue-800 font-extrabold scale-105' 
-                : 'text-slate-400 hover:text-slate-650'
+                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
             <Users className="w-5 h-5 text-current stroke-[2]" />

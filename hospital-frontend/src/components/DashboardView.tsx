@@ -147,7 +147,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
         
         {/* Alerts Section */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs flex flex-col">
-          <div className="p-4 border-b border-slate-150 bg-slate-50/50 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center">
             <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
               Alertes Critiques
@@ -226,7 +226,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
             ))}
           </div>
           
-          <div className="flex justify-between text-[11px] text-slate-400 font-bold tracking-wider pt-2 border-t border-slate-100">
+          <div className="flex justify-between text-[11px] text-slate-400 font-bold tracking-wider pt-2 border-t border-slate-100 dark:border-slate-800">
             {weeklyTrendData.map((data, index) => (
               <span key={index} className="w-full text-center">{data.day}</span>
             ))}
@@ -237,7 +237,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
 
       {/* IA Predictions: Risques à 7 jours */}
       {role === 'magasinier' ? (
-        <section className="bg-slate-150 text-slate-600 p-5 rounded-2xl relative overflow-hidden border border-slate-200 dark:border-slate-800">
+        <section className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 p-5 rounded-2xl relative overflow-hidden border border-slate-200 dark:border-slate-800">
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -246,11 +246,11 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
                   Prédictions IA : Verrouillé
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
                 L'accès à l'intelligence artificielle prédictive de rupture de stock à 7 jours est réservé aux Pharmaciens et aux Directeurs de l'établissement hospitalier afin de réguler la chaîne de distribution médicale.
               </p>
             </div>
-            <span className="text-[10px] uppercase font-black tracking-wider bg-slate-200 text-slate-650 px-2.5 py-1.5 rounded-lg border border-slate-300 pointer-events-none whitespace-nowrap self-start md:self-auto">
+            <span className="text-[10px] uppercase font-black tracking-wider bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 pointer-events-none whitespace-nowrap self-start md:self-auto">
               Accès Limité
             </span>
           </div>
