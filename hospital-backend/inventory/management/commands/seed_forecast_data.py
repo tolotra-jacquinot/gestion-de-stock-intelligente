@@ -90,7 +90,7 @@ class Command(BaseCommand):
             {
                 "code": "MED001",
                 "name": "Paracétamol 500 mg",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 500,
                 "min_stock": 50,
                 "max_stock": 500,
@@ -100,7 +100,7 @@ class Command(BaseCommand):
             {
                 "code": "MED002",
                 "name": "Amoxicilline 500 mg",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 1200,
                 "min_stock": 40,
                 "max_stock": 400,
@@ -110,7 +110,7 @@ class Command(BaseCommand):
             {
                 "code": "MED003",
                 "name": "Ibuprofène 400 mg",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 800,
                 "min_stock": 100,
                 "max_stock": 600,
@@ -120,7 +120,7 @@ class Command(BaseCommand):
             {
                 "code": "MED004",
                 "name": "Métronidazole 500 mg",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 700,
                 "min_stock": 50,
                 "max_stock": 400,
@@ -130,7 +130,7 @@ class Command(BaseCommand):
             {
                 "code": "MED005",
                 "name": "Ceftriaxone 1 g",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 3500,
                 "min_stock": 50,
                 "max_stock": 600,
@@ -140,7 +140,7 @@ class Command(BaseCommand):
             {
                 "code": "SOL001",
                 "name": "Sérum physiologique 500 ml",
-                "category": "CONSOMMABLE",
+                "category": "Solutés",
                 "unit_price": 2000,
                 "min_stock": 100,
                 "max_stock": 1000,
@@ -150,7 +150,7 @@ class Command(BaseCommand):
             {
                 "code": "MED006",
                 "name": "Vitamine C 500 mg",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 600,
                 "min_stock": 100,
                 "max_stock": 600,
@@ -160,7 +160,7 @@ class Command(BaseCommand):
             {
                 "code": "MED007",
                 "name": "Oméprazole 20 mg",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 900,
                 "min_stock": 80,
                 "max_stock": 500,
@@ -170,7 +170,7 @@ class Command(BaseCommand):
             {
                 "code": "MED008",
                 "name": "Diazépam 5 mg",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 400,
                 "min_stock": 30,
                 "max_stock": 300,
@@ -180,7 +180,7 @@ class Command(BaseCommand):
             {
                 "code": "MED009",
                 "name": "Produit récent",
-                "category": "MEDICAMENT",
+                "category": "Médicaments",
                 "unit_price": 1000,
                 "min_stock": 30,
                 "max_stock": 300,
