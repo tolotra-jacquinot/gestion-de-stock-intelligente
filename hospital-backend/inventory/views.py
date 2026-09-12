@@ -3,8 +3,13 @@ from django.db import transaction
 from django.utils import timezone
 
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import (
+    action,
+    api_view,
+    permission_classes,
+)
 from rest_framework.response import Response
+from .services.forecast_service import get_all_forecasts
 
 from .permissions import (
     StockMovementPermission,
@@ -314,3 +319,15 @@ class SaleViewSet(viewsets.ModelViewSet):
         serializer.save(
             sold_by=self.request.user
         )
+
+@api_view(["GET"])
+@permission_classes([StockMovementPermission])
+def forecast_view(request):
+    forecasts = get_all_forecasts()
+
+    return Response(
+        {
+            "count": len(forecasts),
+            "results": forecasts,
+        }
+    )
