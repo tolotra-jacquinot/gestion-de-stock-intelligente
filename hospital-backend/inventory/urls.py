@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
@@ -7,6 +8,7 @@ from .views import (
     PharmacyStockViewSet,
     StockTransferViewSet,
     SaleViewSet,
+    forecast_view,
 )
 
 
@@ -22,4 +24,6 @@ router.register(
     basename="pharmacy-stock",
 )
 
-urlpatterns = router.urls
+urlpatterns = router.urls + [
+    path("forecast/", forecast_view, name="forecast"),
+]
