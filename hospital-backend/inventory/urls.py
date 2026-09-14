@@ -1,6 +1,8 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .alert_views import AlertViewSet
+
 from .views import (
     StockMovementViewSet,
     RestockOrderViewSet,
@@ -18,6 +20,7 @@ router.register(r"restock-orders", RestockOrderViewSet)
 router.register(r"batches", ProductBatchViewSet)
 router.register(r"transfers", StockTransferViewSet)
 router.register(r"sales", SaleViewSet)
+router.register(r"smart-alerts", AlertViewSet)
 router.register(
     r"pharmacy-stocks",
     PharmacyStockViewSet,
