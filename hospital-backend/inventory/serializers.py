@@ -3,6 +3,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from products.models import Product
+from inventory.services.alert_service import schedule_product_alerts
 
 from .models import (
     StockMovement,
@@ -404,6 +405,8 @@ class StockMovementSerializer(serializers.ModelSerializer):
                 "updated_at",
             ]
         )
+
+        schedule_product_alerts(product.id)
 
         return movement
 
@@ -1164,5 +1167,8 @@ class SaleSerializer(serializers.ModelSerializer):
                 "total_amount",
             ]
         )
+
+        for product in locked_products.values():
+            schedule_product_alerts(product.id)
 
         return sale
