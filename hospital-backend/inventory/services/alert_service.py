@@ -99,6 +99,23 @@ def resolve_alert(
     return updated
 
 
+def schedule_product_alerts(product_id):
+    """
+    Programme la génération des alertes après le commit
+    de la transaction courante.
+    """
+
+    def generate_alerts_after_commit():
+        from products.models import Product
+
+        product = Product.objects.get(pk=product_id)
+        generate_product_alerts(product)
+
+    transaction.on_commit(
+        generate_alerts_after_commit
+    )
+
+
 @transaction.atomic
 def generate_product_alerts(product):
     """

@@ -10,6 +10,7 @@ from rest_framework.test import APITestCase
 from products.models import Product
 
 from .models import (
+    Alert,
     LocationStock,
     ProductBatch,
     Sale,
@@ -274,3 +275,49 @@ class SaleStockIntegrityTests(APITestCase):
         self.assertFalse(Sale.objects.exists())
         self.assertFalse(SaleItem.objects.exists())
         self.assertFalse(SaleItemBatch.objects.exists())
+
+    def test_sale_generates_alert_after_commit(self):
+        self.product.min_stock = 20
+        self.product.save(
+            update_fields=[
+                "min_stock",
+                "updated_at",
+            ]
+        )
+
+        with self.captureOnCommitCallbacks(
+            execute=True
+        ):
+            response = self.client.post(
+                self.sale_url,
+                self.sale_payload(quantity=11),
+                format="json",
+            )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+            response.data,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock,
+            19,
+        )
+
+        alert = Alert.objects.get(
+            product=self.product,
+            alert_type="LOW_STOCK",
+            is_resolved=False,
+        )
+
+        self.assertEqual(
+            alert.severity,
+            "WARNING",
+        )
+        self.assertIn(
+            "stock de",
+            alert.message,
+        )

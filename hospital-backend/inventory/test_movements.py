@@ -10,6 +10,7 @@ from rest_framework.test import APITestCase
 from products.models import Product
 
 from .models import (
+    Alert,
     LocationStock,
     ProductBatch,
     StockLocation,
@@ -361,3 +362,59 @@ class StockMovementIntegrityTests(APITestCase):
         )
         self.assertTrue(batch.active)
         self.assertFalse(StockMovement.objects.exists())
+
+    def test_entry_generates_alert_after_commit(self):
+        self.product.stock = 4
+        self.product.save(
+            update_fields=[
+                "stock",
+                "updated_at",
+            ]
+        )
+
+        with self.captureOnCommitCallbacks(
+            execute=True
+        ):
+            response = self.client.post(
+                self.movement_url,
+                {
+                    "product": self.product.id,
+                    "movement_type": "ENTRY",
+                    "quantity": 1,
+                    "reason": "Test alerte automatique",
+                    "batch_number": "LOT-AUTO-ALERT",
+                    "expiration_date": (
+                        timezone.localdate()
+                        + timedelta(days=90)
+                    ).isoformat(),
+                },
+                format="json",
+            )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+            response.data,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock,
+            5,
+        )
+
+        alert = Alert.objects.get(
+            product=self.product,
+            alert_type="LOW_STOCK",
+            is_resolved=False,
+        )
+
+        self.assertEqual(
+            alert.severity,
+            "WARNING",
+        )
+        self.assertIn(
+            "stock de",
+            alert.message,
+        )
