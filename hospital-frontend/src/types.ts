@@ -61,6 +61,35 @@ export interface NotificationPrefs {
   expirationAlerts: boolean;
 }
 
+export type SmartAlertType =
+  | 'LOW_STOCK'
+  | 'STOCKOUT_RISK'
+  | 'EXPIRING_SOON'
+  | 'OUT_OF_STOCK';
+
+export type SmartAlertSeverity =
+  | 'INFO'
+  | 'WARNING'
+  | 'CRITICAL';
+
+export interface SmartAlert {
+  id: number;
+  product: number;
+  product_name: string;
+  batch: number | null;
+  batch_number: string | null;
+  alert_type: SmartAlertType;
+  alert_type_display: string;
+  severity: SmartAlertSeverity;
+  severity_display: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  is_resolved: boolean;
+  created_at: string;
+  resolved_at: string | null;
+}
+
 export type RestockStatus =
   | 'PENDING'
   | 'ORDERED'

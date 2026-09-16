@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertOctagon, CalendarRange, ArrowLeftRight, AlertTriangle, Sparkles, TrendingUp, Lock } from 'lucide-react';
-import { Product, Movement, UserRole } from '../types';
+import { Product, Movement, UserRole, SmartAlert } from '../types';
 
 interface AlertProduct {
   id: number;
@@ -35,19 +35,14 @@ interface DashboardViewProps {
       created_at: string;}[];
     } | null;
 
-    alerts: {
-      out_of_stock: AlertProduct[];
-      critical_stock: AlertProduct[];
-      expired: AlertProduct[];
-      expiring_soon: AlertProduct[];
-    } | null;
+    smartAlerts: SmartAlert[];
 
   onSelectProduct: (productId: string) => void;
   role: UserRole;
   onNavigateToAssistant?: () => void;
 }
 
-export default function DashboardView({ products, movements, stats, alerts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
+export default function DashboardView({ products, movements, stats, smartAlerts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
 
   const displayedOutOfStock = stats?.out_of_stock ?? 0;
 
@@ -69,22 +64,9 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
     { day: 'DIM', height: '100%', value: 130 },
   ];
 
-  const criticalAlerts = [
-    ...(alerts?.out_of_stock || []).map((product) => ({
-      ...product,
-      alertType: "RUPTURE",
-    })),
-
-    ...(alerts?.critical_stock || []).map((product) => ({
-      ...product,
-      alertType: "CRITIQUE",
-    })),
-
-    ...(alerts?.expired || []).map((product) => ({
-      ...product,
-      alertType: "PÉRIMÉ",
-    })),
-  ];
+  const criticalAlerts = smartAlerts.filter(
+    (alert) => !alert.is_resolved
+  );
 
   return (
     <div className="space-y-6">
@@ -159,37 +141,30 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
           
           <div className="divide-y divide-slate-100 flex-grow">
             {criticalAlerts.length > 0 ? (
-              criticalAlerts.slice(0, 5).map((product) => (
+              criticalAlerts.slice(0, 5).map((alert) => (
                 <div
-                  key={`${product.alertType}-${product.id}`}
-                  onClick={() => onSelectProduct(String(product.id))}
+                  key={alert.id}
+                  onClick={() => onSelectProduct(String(alert.product))}
                   className="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
                 >
                   <div>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                      {product.name}
+                      {alert.product_name}
                     </p>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                      {product.alertType === "RUPTURE" &&
-                        `Stock disponible : ${product.stock} unité(s)`}
-
-                      {product.alertType === "CRITIQUE" &&
-                        `Stock actuel : ${product.stock} / seuil min : ${product.min_stock}`}
-
-                      {product.alertType === "PÉRIMÉ" &&
-                        `Date d'expiration : ${product.expiration}`}
+                      {alert.message}
                     </p>
                   </div>
 
                   <span
                     className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
-                      product.alertType === "PÉRIMÉ"
-                        ? "bg-amber-600"
-                        : "bg-red-600"
+                      alert.severity === "CRITICAL"
+                        ? "bg-red-600"
+                        : "bg-amber-600"
                     }`}
                   >
-                    {product.alertType}
+                    {alert.alert_type_display}
                   </span>
                 </div>
               ))

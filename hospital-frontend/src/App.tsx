@@ -5,7 +5,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, Sparkles, Users, ShieldAlert as AlertIcon, ShoppingCart} from 'lucide-react';
 
-import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole, RestockOrder} from './types';
+import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole, RestockOrder, SmartAlert} from './types';
 import { apiFetch } from "./api";
 
 import LoginView from './components/LoginView';
@@ -308,7 +308,7 @@ useEffect(() => {
   fetchDashboardStats();
 }, [currentUser, products, movements]);
 
-  const [stockAlerts, setStockAlerts] = useState<any>(null);
+  const [smartAlerts, setSmartAlerts] = useState<SmartAlert[]>([]);
 
   useEffect(() => {
     const fetchStockAlerts = async () => {
@@ -318,16 +318,16 @@ useEffect(() => {
 
       try {
         const response = await apiFetch(
-          "http://127.0.0.1:8000/api/alerts/"
+          "http://127.0.0.1:8000/api/smart-alerts/"
         );
 
         if (!response.ok) {
           throw new Error(`Erreur API : ${response.status}`);
         }
 
-        const data = await response.json();
+        const data: SmartAlert[] = await response.json();
 
-        setStockAlerts(data);
+        setSmartAlerts(data);
       } catch (error) {
         console.error(
           "Erreur lors du chargement des alertes de stock :",
@@ -1413,7 +1413,7 @@ const handleSaveProduct = async (data: {
                 products={products} 
                 movements={movements} 
                 stats={dashboardStats}
-                alerts={stockAlerts}
+                smartAlerts={smartAlerts}
                 onSelectProduct={handleSelectProduct} 
                 role={currentUser.role}
                 onNavigateToAssistant={() => setActiveTab('assistant')}
