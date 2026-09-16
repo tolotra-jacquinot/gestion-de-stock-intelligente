@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertOctagon, CalendarRange, ArrowLeftRight, AlertTriangle, Sparkles, TrendingUp, Lock } from 'lucide-react';
-import { Product, Movement, UserRole } from '../types';
+import { Product, Movement, UserRole, SmartAlert } from '../types';
 
 interface AlertProduct {
   id: number;
@@ -35,19 +35,14 @@ interface DashboardViewProps {
       created_at: string;}[];
     } | null;
 
-    alerts: {
-      out_of_stock: AlertProduct[];
-      critical_stock: AlertProduct[];
-      expired: AlertProduct[];
-      expiring_soon: AlertProduct[];
-    } | null;
+    smartAlerts: SmartAlert[];
 
   onSelectProduct: (productId: string) => void;
   role: UserRole;
   onNavigateToAssistant?: () => void;
 }
 
-export default function DashboardView({ products, movements, stats, alerts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
+export default function DashboardView({ products, movements, stats, smartAlerts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
 
   const displayedOutOfStock = stats?.out_of_stock ?? 0;
 
@@ -69,22 +64,9 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
     { day: 'DIM', height: '100%', value: 130 },
   ];
 
-  const criticalAlerts = [
-    ...(alerts?.out_of_stock || []).map((product) => ({
-      ...product,
-      alertType: "RUPTURE",
-    })),
-
-    ...(alerts?.critical_stock || []).map((product) => ({
-      ...product,
-      alertType: "CRITIQUE",
-    })),
-
-    ...(alerts?.expired || []).map((product) => ({
-      ...product,
-      alertType: "PÉRIMÉ",
-    })),
-  ];
+  const criticalAlerts = smartAlerts.filter(
+    (alert) => !alert.is_resolved
+  );
 
   return (
     <div className="space-y-6">
@@ -147,7 +129,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
         
         {/* Alerts Section */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs flex flex-col">
-          <div className="p-4 border-b border-slate-150 bg-slate-50/50 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center">
             <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-600" />
               Alertes Critiques
@@ -159,37 +141,30 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
           
           <div className="divide-y divide-slate-100 flex-grow">
             {criticalAlerts.length > 0 ? (
-              criticalAlerts.slice(0, 5).map((product) => (
+              criticalAlerts.slice(0, 5).map((alert) => (
                 <div
-                  key={`${product.alertType}-${product.id}`}
-                  onClick={() => onSelectProduct(String(product.id))}
+                  key={alert.id}
+                  onClick={() => onSelectProduct(String(alert.product))}
                   className="p-4 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
                 >
                   <div>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                      {product.name}
+                      {alert.product_name}
                     </p>
 
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                      {product.alertType === "RUPTURE" &&
-                        `Stock disponible : ${product.stock} unité(s)`}
-
-                      {product.alertType === "CRITIQUE" &&
-                        `Stock actuel : ${product.stock} / seuil min : ${product.min_stock}`}
-
-                      {product.alertType === "PÉRIMÉ" &&
-                        `Date d'expiration : ${product.expiration}`}
+                      {alert.message}
                     </p>
                   </div>
 
                   <span
                     className={`text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
-                      product.alertType === "PÉRIMÉ"
-                        ? "bg-amber-600"
-                        : "bg-red-600"
+                      alert.severity === "CRITICAL"
+                        ? "bg-red-600"
+                        : "bg-amber-600"
                     }`}
                   >
-                    {product.alertType}
+                    {alert.alert_type_display}
                   </span>
                 </div>
               ))
@@ -226,7 +201,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
             ))}
           </div>
           
-          <div className="flex justify-between text-[11px] text-slate-400 font-bold tracking-wider pt-2 border-t border-slate-100">
+          <div className="flex justify-between text-[11px] text-slate-400 font-bold tracking-wider pt-2 border-t border-slate-100 dark:border-slate-800">
             {weeklyTrendData.map((data, index) => (
               <span key={index} className="w-full text-center">{data.day}</span>
             ))}
@@ -237,7 +212,7 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
 
       {/* IA Predictions: Risques à 7 jours */}
       {role === 'magasinier' ? (
-        <section className="bg-slate-150 text-slate-600 p-5 rounded-2xl relative overflow-hidden border border-slate-200 dark:border-slate-800">
+        <section className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 p-5 rounded-2xl relative overflow-hidden border border-slate-200 dark:border-slate-800">
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -246,11 +221,11 @@ export default function DashboardView({ products, movements, stats, alerts, onSe
                   Prédictions IA : Verrouillé
                 </h2>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
                 L'accès à l'intelligence artificielle prédictive de rupture de stock à 7 jours est réservé aux Pharmaciens et aux Directeurs de l'établissement hospitalier afin de réguler la chaîne de distribution médicale.
               </p>
             </div>
-            <span className="text-[10px] uppercase font-black tracking-wider bg-slate-200 text-slate-650 px-2.5 py-1.5 rounded-lg border border-slate-300 pointer-events-none whitespace-nowrap self-start md:self-auto">
+            <span className="text-[10px] uppercase font-black tracking-wider bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 pointer-events-none whitespace-nowrap self-start md:self-auto">
               Accès Limité
             </span>
           </div>

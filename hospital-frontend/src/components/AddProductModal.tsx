@@ -56,17 +56,17 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
   return (
     <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full border border-slate-100 p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl max-w-lg w-full border border-slate-100 dark:border-slate-800 p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
         
-        <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+        <div className="flex justify-between items-start border-b border-slate-100 dark:border-slate-800 pb-3">
           <div>
-            <h3 className="font-bold text-lg text-slate-800">Ajouter un produit</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Enregistrement d'une nouvelle fiche technique dans le stock</p>
+            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">Ajouter un produit</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Enregistrement d'une nouvelle fiche technique dans le stock</p>
           </div>
           <button 
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 font-extrabold text-base p-1"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-extrabold text-base p-1"
           >
             ✕
           </button>
@@ -76,7 +76,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
           
           {/* Nom du produit */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               Nom complet du produit
             </label>
             <input 
@@ -85,7 +85,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Paracétamol 500mg Gélule"
-              className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
+              className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
 
@@ -93,13 +93,13 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
             
             {/* Category selection */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Catégorie
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as ProductCategory)}
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800 bg-white"
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100"
               >
                 <option value="Médicaments">Médicaments</option>
                 <option value="Dispositifs">Dispositifs</option>
@@ -109,14 +109,14 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
             {/* Packaging conditioning */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Conditionnement
               </label>
               <select
                 value={packaging}
                 onChange={(e) => setPackaging(e.target.value)}
                 required
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800 bg-white"
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100"
               >
                 <option value="">Sélectionner</option>
                 <option value="Boîte de 10">Boîte de 10</option>
@@ -137,7 +137,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
             
             {/* Initial stock */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Stock Initial
               </label>
               <input 
@@ -147,13 +147,13 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
                 placeholder="ex: 100"
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
             {/* Min stock threshold */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Seuil Min
               </label>
               <input 
@@ -163,13 +163,13 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 value={minStock}
                 onChange={(e) => setMinStock(e.target.value)}
                 placeholder="ex: 50"
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
             {/* Max Stock */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Stock Max
               </label>
               <input 
@@ -179,7 +179,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 value={maxStock}
                 onChange={(e) => setMaxStock(e.target.value)}
                 placeholder="ex: 500"
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
@@ -189,7 +189,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
             
             {/* Price */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Prix Unitaire (Ar)
               </label>
               <input 
@@ -200,13 +200,13 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
                 placeholder="ex: 100.50"
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
             {/* Expire date */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Date d'expiration
               </label>
               <input 
@@ -214,7 +214,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                 required
                 value={expiration}
                 onChange={(e) => setExpiration(e.target.value)}
-                className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
@@ -222,7 +222,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
           {/* Location details */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               Emplacement physique
             </label>
             <input 
@@ -231,16 +231,16 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="ex: Pharmacie Centrale - Rayon B1"
-              className="w-full border border-slate-200 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 outline-none text-sm text-slate-800"
+              className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 rounded-lg focus:ring-1 focus:ring-blue-800 dark:focus:ring-blue-400 outline-none text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-slate-100">
+          <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button 
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="flex-1 border border-slate-200 py-3 rounded-lg font-bold text-xs uppercase tracking-wider text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 border border-slate-200 dark:border-slate-700 py-3 rounded-lg font-bold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Annuler
             </button>

@@ -401,3 +401,101 @@ class SaleItemBatch(models.Model):
             f"{self.batch.batch_number} "
             f"({self.quantity})"
         )
+
+class Alert(models.Model):
+
+    ALERT_TYPES = [
+        ("LOW_STOCK", "Stock faible"),
+        ("STOCKOUT_RISK", "Risque de rupture"),
+        ("EXPIRING_SOON", "Expiration proche"),
+        ("OUT_OF_STOCK", "Rupture de stock"),
+    ]
+
+    SEVERITY_CHOICES = [
+        ("INFO", "Information"),
+        ("WARNING", "Avertissement"),
+        ("CRITICAL", "Critique"),
+    ]
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="alerts",
+    )
+
+    batch = models.ForeignKey(
+        ProductBatch,
+        on_delete=models.CASCADE,
+        related_name="alerts",
+        null=True,
+        blank=True,
+    )
+
+    alert_type = models.CharField(
+        max_length=30,
+        choices=ALERT_TYPES,
+    )
+
+    severity = models.CharField(
+        max_length=20,
+        choices=SEVERITY_CHOICES,
+    )
+
+    title = models.CharField(
+        max_length=200,
+    )
+
+    message = models.TextField()
+
+    is_read = models.BooleanField(
+        default=False,
+    )
+
+    is_resolved = models.BooleanField(
+        default=False,
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["is_resolved", "-created_at"]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "product",
+                    "alert_type",
+                ],
+                condition=models.Q(
+                    batch__isnull=True,
+                    is_resolved=False,
+                ),
+                name="unique_active_product_alert_type",
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    "product",
+                    "batch",
+                    "alert_type",
+                ],
+                condition=models.Q(
+                    batch__isnull=False,
+                    is_resolved=False,
+                ),
+                name="unique_active_batch_alert_type",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.product.name} - "
+            f"{self.alert_type} - "
+            f"{self.severity}"
+        )
