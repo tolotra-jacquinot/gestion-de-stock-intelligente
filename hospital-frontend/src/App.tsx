@@ -5,7 +5,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { motion, AnimatePresence } from 'motion/react';
 import { Activity, Search, Sun, Moon, Home, Package, ArrowLeftRight, User, Sparkles, Users, ShieldAlert as AlertIcon, ShoppingCart} from 'lucide-react';
 
-import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole, RestockOrder, SmartAlert} from './types';
+import { Product, Movement, UserProfile, NotificationPrefs, ActiveTab, MovementType, UserAccount, UserRole, RestockOrder, SmartAlert, ProductForecast} from './types';
 import { apiFetch } from "./api";
 
 import LoginView from './components/LoginView';
@@ -163,6 +163,8 @@ export default function App() {
   const [toast, setToast] = useState<{ message: string; type: ToastType; } | null>(null);
 
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+
+  const [forecasts, setForecasts] = useState<ProductForecast[]>([]);
   
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -338,6 +340,35 @@ useEffect(() => {
 
     fetchStockAlerts();
   }, [currentUser, products, movements]);
+
+  useEffect(() => {
+    const fetchForecasts = async () => {
+      if (!currentUser) {
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          "http://127.0.0.1:8000/api/forecast/"
+        );
+
+        if (!response.ok) {
+          throw new Error(`Erreur API : ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        setForecasts(data.results);
+      } catch (error) {
+        console.error(
+          "Erreur lors du chargement des prévisions :",
+          error
+        );
+      }
+    };
+
+    fetchForecasts();
+  }, [currentUser]);
 
   const [users, setUsers] = useState<UserAccount[]>([]);
 
@@ -1414,6 +1445,7 @@ const handleSaveProduct = async (data: {
                 movements={movements} 
                 stats={dashboardStats}
                 smartAlerts={smartAlerts}
+                forecasts={forecasts}
                 onSelectProduct={handleSelectProduct} 
                 role={currentUser.role}
                 onNavigateToAssistant={() => setActiveTab('assistant')}
