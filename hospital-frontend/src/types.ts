@@ -118,3 +118,32 @@ export type ActiveTab =
   | 'product-details'
   | 'users'
   | 'assistant';
+
+export type ForecastRiskLevel =
+  | 'OUT_OF_STOCK'
+  | 'HIGH'
+  | 'MEDIUM'
+  | 'LOW'
+  | 'NO_DATA';
+
+export type ForecastDataQuality =
+  | 'INSUFFICIENT'
+  | 'LIMITED'
+  | 'SUFFICIENT';
+
+export interface ProductForecast {
+  product_id: number;
+  product_code: string;
+  product_name: string;
+  stock: number;
+  consumption_30d: number;
+  consumption_7d: number;
+  average_30d: number;
+  average_7d: number;
+  forecast_daily: number;
+  estimated_autonomy_days: number | null;
+  estimated_stockout_date: string | null;
+  risk_level: ForecastRiskLevel;
+  data_quality: ForecastDataQuality;
+  days_with_sales: number;
+}

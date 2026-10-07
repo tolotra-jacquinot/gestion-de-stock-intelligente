@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertOctagon, CalendarRange, ArrowLeftRight, AlertTriangle, Sparkles, TrendingUp, Lock } from 'lucide-react';
-import { Product, Movement, UserRole, SmartAlert } from '../types';
+import { Product, Movement, UserRole, SmartAlert, ProductForecast } from '../types';
 
 interface AlertProduct {
   id: number;
@@ -36,13 +36,41 @@ interface DashboardViewProps {
     } | null;
 
     smartAlerts: SmartAlert[];
+    forecasts: ProductForecast[];
 
   onSelectProduct: (productId: string) => void;
   role: UserRole;
   onNavigateToAssistant?: () => void;
 }
 
-export default function DashboardView({ products, movements, stats, smartAlerts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
+const getForecastRiskLabel = (riskLevel: ProductForecast['risk_level']) => {
+  switch (riskLevel) {
+    case 'OUT_OF_STOCK':
+      return 'RUPTURE';
+    case 'HIGH':
+      return 'RISQUE ÉLEVÉ';
+    case 'MEDIUM':
+      return 'RISQUE MOYEN';
+    case 'LOW':
+      return 'RISQUE FAIBLE';
+    default:
+      return 'DONNÉES INSUFFISANTES';
+  }
+};
+
+const getForecastAutonomyLabel = (forecast: ProductForecast) => {
+  if (forecast.risk_level === 'OUT_OF_STOCK') {
+    return 'Stock actuellement épuisé';
+  }
+
+  if (forecast.estimated_autonomy_days === null) {
+    return 'Autonomie non estimable';
+  }
+
+  return `Autonomie estimée : ${forecast.estimated_autonomy_days} jour(s)`;
+};
+
+export default function DashboardView({ products, movements, stats, smartAlerts, forecasts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
 
   const displayedOutOfStock = stats?.out_of_stock ?? 0;
 
@@ -70,10 +98,10 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
 
   return (
     <div className="space-y-6">
-      
+
       {/* Bento Block 1: Summary Statistics */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
+
         {/* Out of Stock Card */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex flex-col justify-between shadow-xs">
           <div className="flex justify-between items-start">
@@ -126,7 +154,7 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
 
       {/* Critical Alerts & Consumption Chart */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
+
         {/* Alerts Section */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs flex flex-col">
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 dark:border-slate-800 flex justify-between items-center">
@@ -138,7 +166,7 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
               {criticalAlerts.length} PRIORITÉS
             </span>
           </div>
-          
+
           <div className="divide-y divide-slate-100 flex-grow">
             {criticalAlerts.length > 0 ? (
               criticalAlerts.slice(0, 5).map((alert) => (
@@ -182,25 +210,25 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
             <TrendingUp className="w-5 h-5 text-blue-700" />
             Tendance de Consommation
           </h2>
-          
+
           <div className="flex-grow flex items-end justify-between gap-2 h-44 mb-4 select-none">
             {weeklyTrendData.map((data, index) => (
               <div key={index} className="flex-1 flex flex-col items-center group relative cursor-pointer">
-                
+
                 {/* Tooltip on Hover */}
                 <div className="absolute -top-10 scale-0 group-hover:scale-100 bg-slate-800 text-white text-[11px] font-bold px-2 py-1 rounded shadow-md transition-all duration-150 z-10 pointer-events-none whitespace-nowrap">
                   {data.value} unités
                 </div>
 
-                <div 
+                <div
                   className="w-full bg-blue-100 hover:bg-blue-800 group-hover:bg-blue-800 rounded-t-sm transition-all duration-300"
                   style={{ height: data.height }}
                 ></div>
-                
+
               </div>
             ))}
           </div>
-          
+
           <div className="flex justify-between text-[11px] text-slate-400 font-bold tracking-wider pt-2 border-t border-slate-100 dark:border-slate-800">
             {weeklyTrendData.map((data, index) => (
               <span key={index} className="w-full text-center">{data.day}</span>
@@ -218,7 +246,7 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
               <div className="flex items-center gap-2 mb-2">
                 <Lock className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 <h2 className="text-base font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
-                  Prédictions IA : Verrouillé
+                  Prévisions de rupture : Verrouillées
                 </h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-2xl">
@@ -233,66 +261,85 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
       ) : (
         <section className="bg-blue-800/95 text-white p-5 rounded-2xl relative overflow-hidden shadow-md">
           <div className="relative z-10">
-            
+
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-5 h-5 text-sky-200 animate-pulse" />
               <h2 className="text-base font-bold text-white tracking-tight">
-                Prédictions IA : Risques à 7 jours
+                Prévisions de rupture : Risques à 7 jours
               </h2>
             </div>
-            
+
             <p className="text-xs text-sky-100 mb-6 font-medium leading-relaxed">
               Basé sur les tendances historiques et les interventions cliniques programmées.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              
-              {/* Risk prediction 1 */}
-              <div className="bg-white/95 dark:bg-slate-900/20 p-4 rounded-xl border border-white/70 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-blue-700 dark:text-sky-200 uppercase font-black tracking-wider">
-                    Confiance 94%
-                  </span>
-                  <span className="w-2.5 h-2.5 bg-sky-200 rounded-full animate-ping"></span>
-                </div>
-                <p className="text-sm font-bold mt-1 text-slate-800 dark:text-white">Paracétamol IV</p>
-                <p className="text-xs mt-0.5 text-slate-600 dark:text-sky-100">Rupture estimée : J-3</p>
-                
-                <div className="w-full bg-blue-100 dark:bg-slate-900/30 h-1.5 mt-4 rounded-full overflow-hidden">
-                  <div className="bg-blue-500 dark:bg-sky-200 h-full w-[94%] rounded-full"></div>
-                </div>
-              </div>
 
-              {/* Risk prediction 2 */}
-              <div className="bg-white/95 dark:bg-slate-900/20 p-4 rounded-xl border border-white/70 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-blue-700 dark:text-sky-200 uppercase font-black tracking-wider">
-                    Confiance 88%
-                  </span>
-                </div>
-                <p className="text-sm font-bold mt-1 text-slate-800 dark:text-white">Sérum Physiologique</p>
-                <p className="text-xs mt-0.5 text-slate-600 dark:text-sky-100">Rupture estimée : J-5</p>
+              {/* Risk prediction */}
+              {forecasts
+                .filter(
+                  (forecast) =>
+                    forecast.risk_level === 'OUT_OF_STOCK' ||
+                    forecast.risk_level === 'HIGH' ||
+                    forecast.risk_level === 'MEDIUM'
+                )
+                .sort((a, b) => {
+                  const riskOrder = {
+                    OUT_OF_STOCK: 0,
+                    HIGH: 1,
+                    MEDIUM: 2,
+                    LOW: 3,
+                    NO_DATA: 4,
+                  };
 
-                <div className="w-full bg-blue-100 dark:bg-slate-900/30 h-1.5 mt-4 rounded-full overflow-hidden">
-                  <div className="bg-blue-500 dark:bg-sky-200 h-full w-[88%] rounded-full"></div>
-                </div>
-              </div>
+                  return riskOrder[a.risk_level] - riskOrder[b.risk_level];
+                })
+                .slice(0, 3)
+                .map((forecast) => (
+                  <div
+                    key={forecast.product_id}
+                    onClick={() => onSelectProduct(String(forecast.product_id))}
+                    className="bg-white/95 dark:bg-slate-900/20 p-4 rounded-xl border border-white/70 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-blue-700 dark:text-sky-200 uppercase font-black tracking-wider">
+                        {getForecastRiskLabel(forecast.risk_level)}
+                      </span>
 
-              {/* Risk prediction 3 */}
-              <div className="bg-white/95 dark:bg-slate-900/20 p-4 rounded-xl border border-white/70 dark:border-white/10 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-blue-700 dark:text-sky-200 uppercase font-black tracking-wider">
-                    Confiance 82%
-                  </span>
-                </div>
-                <p className="text-sm font-bold mt-1 text-slate-800 dark:text-white">Adrénaline 1mg</p>
-                <p className="text-xs mt-0.5 text-slate-600 dark:text-sky-100">Rupture estimée : J-6</p>
+                      <span className="text-[10px] text-slate-500 dark:text-sky-100 font-bold">
+                        {forecast.forecast_daily > 0
+                          ? `${forecast.forecast_daily} u/j`
+                          : '—'}
+                      </span>
+                    </div>
 
-                <div className="w-full bg-blue-100 dark:bg-slate-900/30 h-1.5 mt-4 rounded-full overflow-hidden">
-                  <div className="bg-blue-500 dark:bg-sky-200 h-full w-[82%] rounded-full"></div>
-                </div>
-              </div>
+                    <p className="text-sm font-bold mt-1 text-slate-800 dark:text-white">
+                      {forecast.product_name}
+                    </p>
 
+                    <p className="text-xs mt-0.5 text-slate-600 dark:text-sky-100">
+                      {getForecastAutonomyLabel(forecast)}
+                    </p>
+
+                    <div className="w-full bg-blue-100 dark:bg-slate-900/30 h-1.5 mt-4 rounded-full overflow-hidden">
+                      <div
+                        className="bg-blue-500 dark:bg-sky-200 h-full rounded-full"
+                        style={{
+                          width:
+                            forecast.estimated_autonomy_days === null
+                              ? '20%'
+                              : `${Math.min(
+                                  100,
+                                  Math.max(
+                                    10,
+                                    (forecast.estimated_autonomy_days / 15) * 100
+                                  )
+                                )}%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
 
@@ -302,7 +349,7 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
       )}
 
       {/* Visual CTA banner to open Chat IA */}
-      <section 
+      <section
         onClick={onNavigateToAssistant}
         className="cursor-pointer bg-gradient-to-r from-blue-900 to-indigo-950 hover:from-blue-850 hover:to-indigo-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm border border-blue-950/20 active:scale-[0.99] transition-all"
       >
@@ -326,10 +373,10 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
 
       {/* Visual Hero Banner representing the medical workspace */}
       <section className="w-full h-48 rounded-xl overflow-hidden relative shadow-xs">
-        <img 
-          alt="Laboratoire médical moderne" 
+        <img
+          alt="Laboratoire médical moderne"
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover select-none" 
+          className="w-full h-full object-cover select-none"
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAtTHXj9956YL4L_3BtRaEoDkyZPfmsItO3YnXVQLrGwj__Jt4eIsaHUqfkvcTNoF8DpwGMI4Bu_xkqBxyrzZgZvW_XGi8Tb5I3eDB101Hm1JiLxMTKh_yZ9tiuoV33FKNqzGx0ljh6gt1Uv-Q-V2HE8wFPF1-o7XRiI8aozC2GwQDQEo3geFWA9vPtWO-SzL-ZvGpxv1UuFEicDxkQNs80r7wz00KNpuJUtsR32z9TgHsDjpgFv3oiJliYjTYiHHTVbTArcXvug"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent flex items-end p-4">
