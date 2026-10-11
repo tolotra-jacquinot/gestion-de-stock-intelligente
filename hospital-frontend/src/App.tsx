@@ -14,6 +14,13 @@ import AddProductModal from './components/AddProductModal';
 import QuickMovementModal from './components/QuickMovementModal';
 import Toast, { ToastType } from "./components/Toast";
 
+type SaleRecord = {
+  created_at: string;
+  items: {
+    quantity: number;
+  }[];
+};
+
 const DashboardView = lazy(
   () => import("./components/DashboardView")
 );
@@ -165,6 +172,8 @@ export default function App() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
 
   const [forecasts, setForecasts] = useState<ProductForecast[]>([]);
+
+  const [sales, setSales] = useState<SaleRecord[]>([]);
   
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -245,6 +254,37 @@ export default function App() {
 
   fetchProducts();
 }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchSales = async () => {
+      try {
+        const response = await apiFetch(
+          "http://127.0.0.1:8000/api/sales/"
+        );
+
+        if (!response.ok) {
+          throw new Error(`Erreur API : ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const salesData = Array.isArray(data)
+          ? data
+          : data.results ?? [];
+
+        setSales(salesData);
+      } catch (error) {
+        console.error(
+          "Erreur lors du chargement des ventes :",
+          error
+        );
+      }
+    };
+
+    fetchSales();
+  }, [currentUser]);
 
   useEffect(() => {
   const fetchMovements = async () => {
@@ -1446,6 +1486,7 @@ const handleSaveProduct = async (data: {
                 stats={dashboardStats}
                 smartAlerts={smartAlerts}
                 forecasts={forecasts}
+                sales={sales}
                 onSelectProduct={handleSelectProduct} 
                 role={currentUser.role}
                 onNavigateToAssistant={() => setActiveTab('assistant')}

@@ -2,6 +2,13 @@ import React from 'react';
 import { AlertOctagon, CalendarRange, ArrowLeftRight, AlertTriangle, Sparkles, TrendingUp, Lock } from 'lucide-react';
 import { Product, Movement, UserRole, SmartAlert, ProductForecast } from '../types';
 
+type SaleRecord = {
+  created_at: string;
+  items: {
+    quantity: number;
+  }[];
+};
+
 interface AlertProduct {
   id: number;
   name: string;
@@ -37,6 +44,7 @@ interface DashboardViewProps {
 
     smartAlerts: SmartAlert[];
     forecasts: ProductForecast[];
+    sales: SaleRecord[];
 
   onSelectProduct: (productId: string) => void;
   role: UserRole;
@@ -70,7 +78,7 @@ const getForecastAutonomyLabel = (forecast: ProductForecast) => {
   return `Autonomie estimée : ${forecast.estimated_autonomy_days} jour(s)`;
 };
 
-export default function DashboardView({ products, movements, stats, smartAlerts, forecasts, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
+export default function DashboardView({ products, movements, stats, smartAlerts, forecasts, sales, onSelectProduct, role, onNavigateToAssistant }: DashboardViewProps) {
 
   const displayedOutOfStock = stats?.out_of_stock ?? 0;
 
@@ -82,15 +90,61 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
   const displayedCritical =
     stats?.critical_stock ?? 0;
 
-  const weeklyTrendData = [
-    { day: 'LUN', height: '40%', value: 52 },
-    { day: 'MAR', height: '60%', value: 78 },
-    { day: 'MER', height: '85%', value: 110 },
-    { day: 'JEU', height: '55%', value: 71 },
-    { day: 'VEN', height: '90%', value: 117 },
-    { day: 'SAM', height: '75%', value: 98 },
-    { day: 'DIM', height: '100%', value: 130 },
-  ];
+  const latestSaleDate = sales.reduce<Date | null>((latest, sale) => {
+    const date = new Date(sale.created_at);
+
+    if (Number.isNaN(date.getTime())) return latest;
+
+    date.setHours(0, 0, 0, 0);
+
+    return !latest || date > latest ? date : latest;
+  }, null);
+
+  const weeklyTrendData = Array.from({ length: 7 }, (_, index) => {
+    const date = latestSaleDate
+      ? new Date(latestSaleDate)
+      : new Date();
+
+    date.setDate(date.getDate() - (6 - index));
+
+    const value = sales
+      .filter((sale) => {
+        const saleDate = new Date(sale.created_at);
+
+        return (
+          !Number.isNaN(saleDate.getTime()) &&
+          saleDate.getFullYear() === date.getFullYear() &&
+          saleDate.getMonth() === date.getMonth() &&
+          saleDate.getDate() === date.getDate()
+        );
+      })
+      .reduce(
+        (total, sale) =>
+          total +
+          sale.items.reduce(
+            (sum, item) => sum + Number(item.quantity || 0),
+            0
+          ),
+        0
+      );
+
+    return {
+      day: date
+        .toLocaleDateString("fr-FR", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+        })
+        .replace(".", "")
+        .toUpperCase(),
+      value,
+    };
+  });
+
+  const maxWeeklyValue = Math.max(
+    ...weeklyTrendData.map((data) => data.value),
+    1
+  );
 
   const criticalAlerts = smartAlerts.filter(
     (alert) => !alert.is_resolved
@@ -208,32 +262,46 @@ export default function DashboardView({ products, movements, stats, smartAlerts,
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col justify-between">
           <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-blue-700" />
-            Tendance de Consommation
+            Tendance de Consommation — dernière semaine enregistrée
           </h2>
 
-          <div className="flex-grow flex items-end justify-between gap-2 h-44 mb-4 select-none">
+          <div className="flex h-44 items-end justify-between gap-2 mb-4 select-none">
             {weeklyTrendData.map((data, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center group relative cursor-pointer">
-
-                {/* Tooltip on Hover */}
-                <div className="absolute -top-10 scale-0 group-hover:scale-100 bg-slate-800 text-white text-[11px] font-bold px-2 py-1 rounded shadow-md transition-all duration-150 z-10 pointer-events-none whitespace-nowrap">
+              <div
+                key={index}
+                className="flex-1 h-full flex flex-col justify-end items-center group relative"
+              >
+                <div className="absolute -top-6 scale-0 group-hover:scale-100 bg-slate-800 text-white text-[11px] font-bold px-2 py-1 rounded shadow-md transition-all duration-150 z-10 pointer-events-none whitespace-nowrap">
                   {data.value} unités
                 </div>
 
                 <div
-                  className="w-full bg-blue-100 hover:bg-blue-800 group-hover:bg-blue-800 rounded-t-sm transition-all duration-300"
-                  style={{ height: data.height }}
-                ></div>
-
+                  className="w-full bg-blue-600 hover:bg-blue-800 rounded-t-sm transition-colors duration-300"
+                  style={{
+                    height:
+                      data.value > 0
+                        ? `${Math.max((data.value / maxWeeklyValue) * 100, 4)}%`
+                        : "0%",
+                  }}
+                />
               </div>
             ))}
           </div>
 
           <div className="flex justify-between text-[11px] text-slate-400 font-bold tracking-wider pt-2 border-t border-slate-100 dark:border-slate-800">
             {weeklyTrendData.map((data, index) => (
-              <span key={index} className="w-full text-center">{data.day}</span>
+              <span key={index} className="w-full text-center">
+                {data.day}
+              </span>
             ))}
           </div>
+
+          {weeklyTrendData.every((data) => data.value === 0) && (
+            <p className="mt-2 text-center text-xs text-slate-400">
+              Aucune vente enregistrée sur les 7 derniers jours.
+            </p>
+          )}
+
         </div>
 
       </section>
